@@ -2,8 +2,8 @@
 replicaCount: 1
 
 image:
-  repository: sparklebot
-  tag: latest
+  repository: ghcr.io/manjurhkhan/sparklebot
+  tag: ""  # defaults to chart appVersion
   pullPolicy: IfNotPresent
 
 persistence:
