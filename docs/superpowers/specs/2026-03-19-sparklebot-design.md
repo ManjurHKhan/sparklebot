@@ -350,11 +350,11 @@ SQLite does not support concurrent writers. Do not scale beyond `replicaCount: 1
 ```json
 {
   "@slack/bolt": "^4.1.0",
-  "better-sqlite3": "^11.7.0",
-  "express": "^4.21.0",
+  "better-sqlite3": "^12.6.2",
+  "express": "^5.1.0",
   "ejs": "^3.1.10",
   "cookie-session": "^2.1.0"
 }
 ```
 
-HTMX is bundled as a static asset in `src/web/public/htmx.min.js` and served by Express. No CDN dependency, works in network-restricted environments. No build step.
+HTMX v2.0.4 is bundled as a static asset in `src/web/public/htmx.min.js` and served by Express. No CDN dependency, works in network-restricted environments. No build step.
