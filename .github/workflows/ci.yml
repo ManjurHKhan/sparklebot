@@ -36,9 +36,20 @@ jobs:
             -e PORT=3000 \
             -p 3000:3000 \
             sparklebot:ci
-          sleep 3
-          curl -sf http://localhost:3000/healthz
-          docker stop sparklebot-test
+          for i in $(seq 1 10); do
+            if curl -sf http://localhost:3000/healthz; then
+              echo " healthz OK"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "healthz failed, container logs:"
+          docker logs sparklebot-test
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: docker stop sparklebot-test 2>/dev/null || true
 
   helm-lint:
     runs-on: ubuntu-latest
