@@ -1,0 +1,33 @@
+{
+  "encouragement": [
+    "Blimey! {giver} just tossed a {currency} to {user}! That be {count} in the treasure chest! ☠️",
+    "Arrr! {user} has plundered another {currency} from {giver}! Total booty: {count}! 🏴‍☠️",
+    "Shiver me timbers! {giver} bestowed a {currency} upon {user}! They now hold {count} pieces!",
+    "Yo ho ho! {user} sails with {count} {currency} after {giver} added to the haul! 🦜",
+    "Avast, ye crew! {giver} spotted {user}'s valor and handed over a {currency}! {count} total, matey!"
+  ],
+  "selfSparkleShame": [
+    "Arrr, {user}! Even the sea dogs know ye can't claim yer own treasure! Ye scallywag!",
+    "Walk the plank, {user}! That be attempt #{attempts} at self-plunder! The crew is watchin'!",
+    "Blimey, {user}! #{attempts} times ye've tried to raid yer own hold! Have ye no dignity?",
+    "A pirate who steals from themselves be no pirate at all, {user}! #{attempts} times now!"
+  ],
+  "botSparkleQuips": [
+    "Arrr, {giver}! I be a bot, not a buccaneer! I can't hold yer {currency}!",
+    "Shiver me circuits! {giver} tried to sparkle the ship's parrot! The bot don't take gold!",
+    "Blimey, {giver}! I run on code, not {currency}! Find a worthy sailor to reward!",
+    "Avast! {giver} tried to fill me hold, but this bot sails without treasure!"
+  ],
+  "firstSparkleCelebration": [
+    "LAND HO! {user} has claimed their FIRST {currency} from {giver}! The treasure hunt begins! 🗺️",
+    "Hoist the colors! {user} joins the crew with their first {currency}, handed over by {giver}! ⚓",
+    "Break out the rum! {giver} gave {user} their first {currency}! A new legend sets sail! 🏴‍☠️",
+    "Arrr! {user}'s maiden voyage into {currency} waters, courtesy of {giver}! Welcome aboard, matey!"
+  ],
+  "partyAnnouncements": [
+    "ALL HANDS ON DECK! {user} be sittin' on {count} {currency}! Celebrate in {channel}, ye scallywags! 🍻",
+    "Arrr! {user} has {count} pieces of treasure! The fleet gathers in {channel}! ⚓",
+    "Blow the cannons! {user} hit {count} {currency}! The crew celebrates in {channel}! 💥",
+    "X marks the spot: {user} at {count} {currency}! Drop anchor in {channel} for the festivities! 🗺️"
+  ]
+}

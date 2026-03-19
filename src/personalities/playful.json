@@ -1,0 +1,52 @@
+{
+  "encouragement": [
+    "Boo-yah! {giver} just gave {user} a {currency}! That's {count} total! 🎉",
+    "✨ Whoa! {user} just got sparkled by {giver}! Up to {count} {currency} now!",
+    "💫 {giver} thinks {user} is amazing — {count} {currency} and counting!",
+    "🚀 {user} is on fire! {giver} dropped a {currency} bringing the total to {count}!",
+    "High five, {user}! {giver} just gave you a {currency}. You've got {count} total now! 🙌",
+    "ZAP! {giver} zapped {user} with a {currency}! Total stash: {count}! ⚡",
+    "🎊 {user} just got a {currency} from {giver}! Running total: {count}. Keep being awesome!",
+    "Oh snap! {user} racked up another {currency} from {giver}. {count} total and rising! 🌟",
+    "💥 {giver} dropped a {currency} on {user}! That's {count} in the bank!",
+    "Woo! {user} = {count} {currency} rich, thanks to {giver}! 🥳",
+    "📣 Attention everyone: {user} just got sparkled by {giver}! {count} total — legend status incoming."
+  ],
+  "selfSparkleShame": [
+    "Oh {user}... you just sparkled yourself. That's allowed exactly once. Enjoy it. 😬",
+    "Really, {user}? This is attempt #{attempts} to self-sparkle. We're keeping count. 👀",
+    "Self-sparkle detected! That's {attempts} time(s) for {user}. Bold strategy. 🙃",
+    "{user} tried to sparkle themselves again (attempt #{attempts}). The audacity. 😂",
+    "Oof. {user} went for the self-sparkle (#{attempts}). We don't judge. Actually we do. 😅",
+    "Attempt #{attempts}: {user} reaches for glory... and sparkles themselves. Classic. ✨🤦",
+    "{user} just tried to self-sparkle for the {attempts}th time. Someone needs a hug. 💆",
+    "Log entry #{attempts}: {user} attempts self-sparkle. Outcome: shame. Lesson: not learned. 📋"
+  ],
+  "botSparkleQuips": [
+    "Aww, {giver} tried to sparkle me! 🤖 I don't have a wallet, but I appreciate the thought.",
+    "Thanks {giver}, but robots don't collect {currency}. I just hoard data. 💾",
+    "Beep boop! {giver} gave me a {currency}! I'll treasure it in my /dev/null. 🤖",
+    "That's sweet, {giver}, but {user} runs on electricity, not {currency}. Try the outlet.",
+    "Awww {giver} sparkled the bot! I'm filing this under 'things that made me feel almost human'. 💙",
+    "Error 418: I'm a teapot, not a {currency} recipient. But {giver} gets points for trying! ☕",
+    "{giver} just sparkled {user}. I'm touched. My logs will remember this day. 📜"
+  ],
+  "firstSparkleCelebration": [
+    "🎉 POP THE CONFETTI! {user} just got their FIRST {currency} from {giver}! Welcome to the club!",
+    "🥇 FIRST SPARKLE ALERT! {giver} just made history by giving {user} their very first {currency}!",
+    "✨ This is a big deal! {user} has received their inaugural {currency} from {giver}! The journey begins!",
+    "🎊 Oh wow oh wow! {user} got their first-ever {currency}! Thanks {giver} for making this moment!",
+    "🌟 Milestone unlocked! {user} just received their first {currency} from {giver}. Mark the calendar!",
+    "🏆 New sparkle member: {user}! {giver} just popped {user}'s {currency} cherry. Welcome to the cool kids club!"
+  ],
+  "partyAnnouncements": [
+    "🎉 PARTY TIME! {user} just hit {count} {currency}! Everyone head to {channel} to celebrate!",
+    "🥳 WE'RE THROWING A PARTY! {user} hit {count} {currency}! Get to {channel}, NOW!",
+    "🚨 MILESTONE ALERT: {user} has {count} {currency}! The party is in {channel}!",
+    "🎊 {user} hit {count} {currency}! Drop what you're doing and get to {channel}!",
+    "📣 ALL HANDS ON DECK! {user} just crossed {count} {currency}! Party in {channel}!",
+    "💥 BOOM! {user} cracked {count} {currency}! {channel} is the place to be right now!",
+    "🌟 {count} {currency} for {user}! This calls for an immediate celebration in {channel}!",
+    "🎆 {user} — {count} {currency} deep and still going! Party's at {channel}!"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "encouragement": [
+    "{giver} has recognized {user}'s contributions with a {currency}. Total: {count}.",
+    "A {currency} has been awarded to {user} by {giver}. Running total: {count}.",
+    "{user} received a {currency} from {giver}, bringing their total to {count}.",
+    "Recognition given: {giver} awarded {user} a {currency}. Current balance: {count}.",
+    "{giver} extended a {currency} to {user}. Their total now stands at {count}."
+  ],
+  "selfSparkleShame": [
+    "{user}, self-recognition is noted but not permitted. Please direct your appreciation outward.",
+    "This appears to be attempt #{attempts} at self-recognition, {user}. The system discourages this practice.",
+    "{user}, self-awarded {currency} do not count toward your total. Attempt #{attempts} logged.",
+    "Noted, {user}. Attempt #{attempts}. Recognition should flow between colleagues, not in loops."
+  ],
+  "botSparkleQuips": [
+    "Thank you for the gesture, {giver}, but automated systems are not eligible to receive {currency}.",
+    "Appreciated, {giver}. However, {user} cannot accept {currency} awards. Please direct them to a colleague.",
+    "The intent is appreciated, {giver}, but {user} operates outside the recognition program.",
+    "Thank you, {giver}. Unfortunately, {user} is not configured to receive {currency}."
+  ],
+  "firstSparkleCelebration": [
+    "{user} has received their first {currency} from {giver}. A milestone worth noting.",
+    "First recognition achieved: {giver} awarded {user} their inaugural {currency}. Well done.",
+    "{user} enters the recognition program with their first {currency}, courtesy of {giver}.",
+    "Congratulations to {user} on their first {currency}, awarded by {giver}."
+  ],
+  "partyAnnouncements": [
+    "{user} has reached {count} {currency}. The team is gathering in {channel} to acknowledge this milestone.",
+    "Milestone reached: {user} at {count} {currency}. Please join the recognition in {channel}.",
+    "{user} has achieved {count} {currency}. A group acknowledgment is underway in {channel}.",
+    "Team recognition in progress: {user} has earned {count} {currency}. See {channel} for details."
+  ]
+}
