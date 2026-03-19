@@ -188,19 +188,80 @@ Givers with reasons are listed individually. Givers without reasons are grouped 
 
 Express server serving HTMX + EJS templates. Authenticated via Slack OAuth ("Sign in with Slack").
 
+#### Visual Direction
+
+Dark & Premium theme. Deep dark background, subtle glass effects, gradient accents. Inspired by Linear, Raycast, Vercel dashboard.
+
+#### Design Tokens
+
+All colors are derived from brand config so the theme adapts to any company's branding.
+
+| Token | Default | Purpose |
+|-------|---------|---------|
+| `--bg-base` | `#0f0f23` | Page background |
+| `--bg-sidebar` | `rgba(255,255,255,0.03)` | Sidebar background |
+| `--bg-card` | `rgba(255,255,255,0.04)` | Card/surface background |
+| `--border` | `rgba(255,255,255,0.06)` | Card and divider borders |
+| `--text-primary` | `#ffffff` | Primary text |
+| `--text-secondary` | `rgba(255,255,255,0.4)` | Secondary/label text |
+| `--text-muted` | `rgba(255,255,255,0.3)` | Timestamps, rank numbers |
+| `--accent` | `var(--color-primary)` | Active states, highlights (from `SPARKLE_COLOR_PRIMARY`) |
+| `--accent-light` | derived | 12% opacity version for active nav backgrounds |
+| `--accent-gradient` | `linear-gradient(135deg, var(--color-primary), var(--color-accent))` | Badges, top-rank avatars |
+| `--radius-sm` | `6px` | Buttons, pills |
+| `--radius-md` | `10px` | Cards |
+| `--radius-lg` | `12px` | Content containers |
+
+#### Layout
+
+Left sidebar + content area.
+
+**Sidebar (fixed):**
+- Logo + app name at top
+- Nav links with emoji icons: Leaderboard, Activity, Channels, My Sparkles
+- Active link: accent-colored text on `--accent-light` background, rounded
+- User avatar (initials in gradient circle) + name at bottom
+- Collapses to icon-only on mobile/narrow screens
+
+**Content area:** Scrollable, padded. Page title + subtitle at top.
+
 #### Pages
 
-1. **Leaderboard** -- All-time sparkle rankings with totals. Same data as `.sparkles` but in a richer visual format with sorting via HTMX.
+**1. Leaderboard**
 
-2. **Personal History** -- Requires login. Shows sparkles you've received (who, reason, when) and sparkles you've given. Two tabs or sections.
+Podium section for top 3, then compact list for ranks 4-10.
 
-3. **Recent Activity Feed** -- Live-ish feed of recent sparkles across the workspace. Who sparkled who, when, why. Polls for updates via HTMX.
+- Top 3 as side-by-side podium cards: 2nd | 1st | 3rd. Center card (1st) is slightly elevated with accent gradient border and glow shadow.
+- Each podium card: medal emoji, avatar circle (gradient background, initials), name, sparkle count. 1st place count in accent color.
+- Ranks 4-10: compact rows in a bordered container. Each row: rank number, small avatar, name, count. Minimal styling.
 
-4. **Channel Stats** -- Which channels have the most sparkle activity. Rankings by total sparkles given in each channel.
+**2. Activity Feed**
+
+Card stream of recent sparkles across the workspace.
+
+- Each card: horizontal layout with giver avatar, "giver sparkled receiver" text, reason in italics (if provided), channel name, and relative timestamp.
+- Party events: warm gold accent border (`rgba(245,158,11,0.12)`), party emoji avatar, "user threw a sparkle party" text, participant count.
+- "Live" indicator badge in the page header. HTMX polls for new items (appends to top of list).
+
+**3. Channel Stats**
+
+Horizontal bar chart ranking channels by total sparkle activity.
+
+- Each row: channel name (left), sparkle count (right), gradient-filled progress bar below.
+- Bars use `--accent-gradient`, sized proportionally to the highest channel.
+- Sorted by count descending.
+
+**4. My Sparkles (requires login)**
+
+Personal dashboard with stats summary and history.
+
+- Three stat cards at top in a row: Received (accent background), Given, Rank. Large number centered, label below.
+- Pill tabs below: "Received" (default active) | "Given". Tab switching via HTMX (partial page swap, no full reload).
+- Card stream below tabs (same component style as Activity feed): avatar, "From user" or "To user", reason, timestamp.
 
 #### Branding
 
-Dashboard colors and logo are configurable via env vars. The EJS layout template reads branding config and applies it as CSS custom properties.
+Dashboard colors and logo are configurable via env vars. The EJS layout template injects branding config as CSS custom properties on `:root`, so all design tokens adapt automatically. The `--accent-gradient` uses both primary and accent colors for visual depth.
 
 ## Personalization
 
