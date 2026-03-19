@@ -1,0 +1,50 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <h1>🏆 Leaderboard</h1>
+  <p class="subtitle">All-time <%= currencyPlural %> rankings</p>
+</div>
+
+<% if (board.length >= 3) { %>
+<div class="podium">
+  <div class="podium-card rank-2">
+    <div class="medal">🥈</div>
+    <div class="avatar"><%= board[1].receiver_name ? board[1].receiver_name.charAt(0).toUpperCase() : '?' %></div>
+    <div class="podium-name"><%= board[1].receiver_name || board[1].receiver_id %></div>
+    <div class="podium-count"><%= board[1].count %> <%= currencyPlural %></div>
+  </div>
+  <div class="podium-card rank-1">
+    <div class="medal">🥇</div>
+    <div class="avatar"><%= board[0].receiver_name ? board[0].receiver_name.charAt(0).toUpperCase() : '?' %></div>
+    <div class="podium-name"><%= board[0].receiver_name || board[0].receiver_id %></div>
+    <div class="podium-count accent"><%= board[0].count %> <%= currencyPlural %></div>
+  </div>
+  <div class="podium-card rank-3">
+    <div class="medal">🥉</div>
+    <div class="avatar"><%= board[2].receiver_name ? board[2].receiver_name.charAt(0).toUpperCase() : '?' %></div>
+    <div class="podium-name"><%= board[2].receiver_name || board[2].receiver_id %></div>
+    <div class="podium-count"><%= board[2].count %> <%= currencyPlural %></div>
+  </div>
+</div>
+<% } %>
+
+<% if (board.length > 3) { %>
+<div class="card leaderboard-list">
+  <% for (let i = 3; i < board.length; i++) { %>
+  <div class="leaderboard-row">
+    <span class="rank-number"><%= i + 1 %></span>
+    <div class="avatar sm"><%= board[i].receiver_name ? board[i].receiver_name.charAt(0).toUpperCase() : '?' %></div>
+    <span class="row-name"><%= board[i].receiver_name || board[i].receiver_id %></span>
+    <span class="row-count"><%= board[i].count %></span>
+  </div>
+  <% } %>
+</div>
+<% } %>
+
+<% if (board.length === 0) { %>
+<div class="card empty-state">
+  <p>No sparkles yet. Be the first to spread some! ✨</p>
+</div>
+<% } %>
+
+<%- include('partials/footer') %>

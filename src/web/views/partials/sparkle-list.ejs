@@ -1,0 +1,10 @@
+<% for (const item of items) { %>
+  <%- include('sparkle-card', {
+    giverName: item.giver_id,
+    receiverName: item.receiver_name || item.receiver_id,
+    reason: item.reason,
+    channelName: item.channel_id,
+    createdAt: item.created_at,
+    isParty: false
+  }) %>
+<% } %>
