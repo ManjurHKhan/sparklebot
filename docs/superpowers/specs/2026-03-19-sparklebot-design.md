@@ -221,7 +221,7 @@ Left sidebar + content area.
 - Nav links with emoji icons: Leaderboard, Activity, Channels, My Sparkles
 - Active link: accent-colored text on `--accent-light` background, rounded
 - User avatar (initials in gradient circle) + name at bottom
-- Collapses to icon-only on mobile/narrow screens
+- **Mobile (< 768px):** Sidebar hidden by default. Hamburger icon in top-left of content area. Tapping opens sidebar as a full-height overlay with backdrop. Tapping a nav link or outside closes it.
 
 **Content area:** Scrollable, padded. Page title + subtitle at top.
 
@@ -419,3 +419,73 @@ SQLite does not support concurrent writers. Do not scale beyond `replicaCount: 1
 ```
 
 HTMX v2.0.4 is bundled as a static asset in `src/web/public/htmx.min.js` and served by Express. No CDN dependency, works in network-restricted environments. No build step.
+
+## Dockerfile
+
+Multi-stage build using `node:22-alpine`.
+
+```dockerfile
+# Build stage -- install deps with native compilation support
+FROM node:22-alpine AS build
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+
+# Runtime stage -- minimal image
+FROM node:22-alpine
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY src/ ./src/
+EXPOSE 3000
+USER node
+CMD ["node", "src/app.js"]
+```
+
+`better-sqlite3` requires native compilation (python3, make, g++), isolated to the build stage. Runtime image stays small.
+
+## Project Files
+
+### .gitignore
+
+```
+node_modules/
+.env
+data/
+.superpowers/
+*.db
+*.db-journal
+*.db-wal
+```
+
+### .env.example
+
+```bash
+# Slack App (required)
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_SIGNING_SECRET=your-signing-secret
+SLACK_APP_TOKEN=xapp-your-app-token
+
+# Slack OAuth (required for web dashboard)
+SLACK_CLIENT_ID=your-client-id
+SLACK_CLIENT_SECRET=your-client-secret
+
+# Session (required)
+SPARKLE_SESSION_SECRET=random-secret-string
+
+# Server
+PORT=3000
+
+# Personalization (all optional, defaults shown)
+SPARKLE_CURRENCY=sparkle
+SPARKLE_CURRENCY_PLURAL=sparkles
+SPARKLE_EMOJI=
+SPARKLE_PERSONALITY=playful
+SPARKLE_COLOR_PRIMARY=#6C5CE7
+SPARKLE_COLOR_ACCENT=#FFEAA7
+SPARKLE_LOGO_URL=
+SPARKLE_PARTY_MINUTES=30
+SPARKLE_BATCH_INITIAL_SECONDS=15
+SPARKLE_BATCH_EXTEND_SECONDS=15
+SPARKLE_BATCH_MAX_SECONDS=120
+```
