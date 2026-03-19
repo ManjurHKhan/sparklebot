@@ -1,6 +1,4 @@
-'use strict';
-
-function setupAuth(app, config) {
+export function setupAuth(app, config) {
   app.get('/auth/login', (req, res) => {
     const redirectUri = `${req.protocol}://${req.get('host')}/auth/callback`;
     const params = new URLSearchParams({
@@ -67,11 +65,10 @@ function setupAuth(app, config) {
   });
 }
 
-function requireAuth(req, res, next) {
+export function requireAuth(req, res, next) {
   if (req.session?.user) {
     return next();
   }
   res.redirect('/auth/login');
 }
 
-module.exports = { setupAuth, requireAuth };
