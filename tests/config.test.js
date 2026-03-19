@@ -44,4 +44,19 @@ describe('config', () => {
     expect(config.partyMinutes).toBe(60);
     expect(config.port).toBe(8080);
   });
+
+  it('sanitizes invalid color values to defaults', async () => {
+    process.env.SPARKLE_COLOR_PRIMARY = 'red; } * { display:none }';
+    process.env.SPARKLE_COLOR_ACCENT = 'javascript:alert(1)';
+    const { default: loadConfig } = await import('../src/config.js');
+    const config = loadConfig();
+    expect(config.colorPrimary).toBe('#6C5CE7');
+    expect(config.colorAccent).toBe('#FFEAA7');
+  });
+
+  it('requires session secret (no default)', async () => {
+    const { default: loadConfig } = await import('../src/config.js');
+    const config = loadConfig();
+    expect(config.sessionSecret).toBeUndefined();
+  });
 });

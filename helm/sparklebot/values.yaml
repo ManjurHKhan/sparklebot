@@ -40,6 +40,8 @@ sparkle:
   batchInitialSeconds: 15
   batchExtendSeconds: 15
   batchMaxSeconds: 120
+  # Must match Slack app OAuth redirect URL config
+  oauthRedirectUri: ""  # e.g. https://sparklebot.example.com/auth/callback
 
 resources:
   requests:

@@ -15,6 +15,11 @@ import { setupRoutes } from './web/routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const config = loadConfig();
+
+if (!config.sessionSecret) {
+  console.error('SPARKLE_SESSION_SECRET is required. Set it to a random string (32+ chars).');
+  process.exit(1);
+}
 const dbPath = config.dbPath || path.join(__dirname, '..', 'data', 'sparklebot.db');
 const db = createDb(dbPath);
 const messages = createMessages(config.personality);
@@ -32,6 +37,16 @@ expressApp.use(cookieSession({
   sameSite: 'lax',
   secure: process.env.NODE_ENV === 'production',
 }));
+
+// Security headers
+expressApp.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-XSS-Protection', '0'); // disabled per OWASP -- rely on CSP instead
+  res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
+  next();
+});
 
 // Health probe
 expressApp.get('/healthz', (req, res) => res.send('ok'));
