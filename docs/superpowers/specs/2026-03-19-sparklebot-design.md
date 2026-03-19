@@ -48,6 +48,8 @@ sparklebot/
     web/
       routes.js               -- Express routes for dashboard
       auth.js                 -- Slack OAuth flow
+      public/
+        htmx.min.js           -- Bundled HTMX (no CDN)
       views/
         layout.ejs            -- Base layout (branding colors, logo)
         leaderboard.ejs       -- All-time rankings
@@ -103,7 +105,11 @@ CREATE INDEX idx_sparkles_giver ON sparkles(giver_id);
 
 #### `.sparkle @user [reason]`
 
-Give a sparkle to one or more users. Reasons are optional. Input is normalized: `@mkhan`, `mkhan`, and Slack's `<@U123ABC>` mention markup all resolve to the same identifier. Non-existent users are accepted without validation and stored as raw text.
+Give a sparkle to one or more users. Reasons are optional.
+
+**Input resolution flow:** The parser extracts user references from the message. Slack `<@U123ABC>` mention markup is resolved directly to a user ID. Plain text like `@mkhan` or `mkhan` triggers a Slack API lookup (`users:read`) to find a matching user. If the lookup finds a match, the Slack user ID is stored. If no match is found, the raw text is stored as-is in `receiver_id` and `receiver_name` -- no error, no validation. This allows sparkling non-existent, joke, or aspirational targets (e.g., `.sparkle @obama for running a great country`).
+
+**Reason parsing:** User mentions are consumed greedily from the start of the argument string. Everything after the last recognized user mention (whether resolved or unresolved) is the reason. Example: `.sparkle @alice @bob great work` gives both alice and bob a sparkle with reason "great work". `.sparkle @alice for the demo @bob` gives alice a sparkle with no reason and bob a sparkle with no reason (because `@bob` is parsed as a user, not part of a reason). To sparkle alice with a reason that contains an `@`, it must not match a user pattern.
 
 **Multi-sparkle:** `.sparkle @user1 @user2 @user3 [reason]` gives each user a sparkle with the same reason. One combined confirmation message.
 
@@ -111,9 +117,11 @@ Give a sparkle to one or more users. Reasons are optional. Input is normalized: 
 
 #### `.sparkle party`
 
-Sparkle everyone who posted in the channel within the last N minutes (default: 30). The triggerer is excluded. No minutes argument -- the lookback window is a hardcoded config value.
+Sparkle everyone who posted in the channel within the last N minutes (default: 30, configurable via `SPARKLE_PARTY_MINUTES`). The triggerer is excluded. Bot messages are excluded from the history lookup. No minutes argument -- the lookback window is configured via env var, not user-facing.
 
-Party sparkles go through the same aggregation window as regular sparkles.
+If nobody else posted in the lookback window, the bot responds with a message like "No one to party with! Post something first."
+
+Party sparkles go through the same aggregation window as regular sparkles. Since all party sparkles share the same channel but have different recipients, each recipient gets their own aggregation batch. However, the party confirmation itself is a single message listing everyone who got sparkled -- it bypasses per-recipient batching and posts immediately as a party-specific format.
 
 #### `.sparkles`
 
@@ -198,6 +206,8 @@ Dashboard colors and logo are configurable via env vars. The EJS layout template
 
 All personalization is configured via environment variables, settable through Helm values.
 
+**Commands are always `.sparkle` and `.sparkles` regardless of `SPARKLE_CURRENCY`.** The currency name only affects response text (e.g., "alice just got 3 kudos!") and the web dashboard labels. This keeps commands consistent and predictable across deployments.
+
 | Setting | Env Var | Default |
 |---------|---------|---------|
 | Currency name | `SPARKLE_CURRENCY` | `sparkle` |
@@ -258,6 +268,9 @@ slack:
   botTokenKey: bot-token
   signingSecretKey: signing-secret
   appTokenKey: app-token
+  oauthClientIdKey: oauth-client-id
+  oauthClientSecretKey: oauth-client-secret
+  sessionSecretKey: session-secret
 
 sparkle:
   currency: sparkle
@@ -296,11 +309,33 @@ Required bot events:
 - `message.channels` -- Listen for `.sparkle` / `.sparkles` commands
 - `message.groups` -- Same for private channels
 
+DM commands are not supported. The bot only listens in channels it has been invited to. (`message.im` is not subscribed.)
+
 OAuth scopes (for web dashboard "Sign in with Slack"):
 - `identity.basic` -- Get user identity
 - `identity.avatar` -- Get user avatar for dashboard
 
+The web dashboard requires a **Slack OAuth Client ID and Client Secret** (from the Slack app's OAuth & Permissions page). These are separate from the bot token and app token.
+
 App must be configured for Socket Mode (requires `SLACK_APP_TOKEN` with `connections:write` scope).
+
+## Operational Concerns
+
+### Health Probes
+
+Express serves `GET /healthz` returning 200. Used for both liveness and readiness probes in the K8s deployment.
+
+### Graceful Shutdown
+
+On SIGTERM, the bot flushes all pending aggregation batches (posts confirmations immediately) before exiting. Sparkles are already written to the DB when received, so even an unclean shutdown only loses confirmation messages, not data.
+
+### Single Replica Only
+
+SQLite does not support concurrent writers. Do not scale beyond `replicaCount: 1`. This is documented in the Helm values.
+
+### Session Management
+
+`cookie-session` stores the Slack user ID and display name after OAuth. Session secret is configured via `SPARKLE_SESSION_SECRET` env var (required, sourced from the existing K8s secret). Cookies are `httpOnly`, `secure` (when behind TLS), `sameSite: lax`, with a 7-day expiry.
 
 ## Error Handling
 
@@ -308,6 +343,7 @@ App must be configured for Socket Mode (requires `SLACK_APP_TOKEN` with `connect
 - **DB failures:** Log error, respond to user with a generic "something went wrong" message.
 - **Invalid commands:** Silently ignore messages that don't match `.sparkle` or `.sparkles` patterns.
 - **OAuth failures:** Redirect to an error page with a "try again" link.
+- **Party mode in uninvited channel:** Bot cannot read history from channels it hasn't been invited to. If `channels.history` fails, respond with "Invite me to this channel first!"
 
 ## Dependencies
 
@@ -321,4 +357,4 @@ App must be configured for Socket Mode (requires `SLACK_APP_TOKEN` with `connect
 }
 ```
 
-HTMX is loaded via CDN in the EJS layout template. No build step.
+HTMX is bundled as a static asset in `src/web/public/htmx.min.js` and served by Express. No CDN dependency, works in network-restricted environments. No build step.
