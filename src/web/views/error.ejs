@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error — <%= appName || 'Sparklebot' %></title>
+  <style>
+    :root {
+      --color-primary: <%= colorPrimary || '#6C5CE7' %>;
+      --color-accent: <%= colorAccent || '#FFEAA7' %>;
+    }
+  </style>
+  <link rel="stylesheet" href="/public/style.css">
+</head>
+<body>
+
+  <div class="error-page">
+    <div class="error-card">
+      <div class="error-emoji">⚠️</div>
+      <h1 class="error-title">Something went wrong</h1>
+      <p class="error-message"><%= message || 'An unexpected error occurred. Please try again.' %></p>
+      <a href="/auth/login" class="btn btn-ghost">Try again</a>
+    </div>
+  </div>
+
+</body>
+</html>
