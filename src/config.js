@@ -1,3 +1,8 @@
+function sanitizeColor(value, fallback) {
+  // Only allow valid CSS hex colors
+  return /^#[0-9a-fA-F]{3,8}$/.test(value) ? value : fallback;
+}
+
 export default function loadConfig() {
   return {
     // Slack
@@ -6,7 +11,8 @@ export default function loadConfig() {
     slackAppToken: process.env.SLACK_APP_TOKEN,
     slackClientId: process.env.SLACK_CLIENT_ID,
     slackClientSecret: process.env.SLACK_CLIENT_SECRET,
-    sessionSecret: process.env.SPARKLE_SESSION_SECRET || 'change-me',
+    sessionSecret: process.env.SPARKLE_SESSION_SECRET,
+    oauthRedirectUri: process.env.SPARKLE_OAUTH_REDIRECT_URI || '',
 
     // Server
     port: parseInt(process.env.PORT || '3000', 10),
@@ -17,8 +23,8 @@ export default function loadConfig() {
     currencyPlural: process.env.SPARKLE_CURRENCY_PLURAL || 'sparkles',
     emoji: process.env.SPARKLE_EMOJI || '\u2728',
     personality: process.env.SPARKLE_PERSONALITY || 'playful',
-    colorPrimary: process.env.SPARKLE_COLOR_PRIMARY || '#6C5CE7',
-    colorAccent: process.env.SPARKLE_COLOR_ACCENT || '#FFEAA7',
+    colorPrimary: sanitizeColor(process.env.SPARKLE_COLOR_PRIMARY, '#6C5CE7'),
+    colorAccent: sanitizeColor(process.env.SPARKLE_COLOR_ACCENT, '#FFEAA7'),
     logoUrl: process.env.SPARKLE_LOGO_URL || '',
 
     // Behavior
