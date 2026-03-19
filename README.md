@@ -1,74 +1,68 @@
 # Sparklebot
 
-A lightweight Slack bot for peer recognition. Give your teammates sparkles for being awesome.
+[![CI](https://github.com/ManjurHKhan/sparklebot/actions/workflows/ci.yml/badge.svg)](https://github.com/ManjurHKhan/sparklebot/actions/workflows/ci.yml)
 
-Inspired by the original [Hubot sparkles script](https://github.com/pmn/sparkles) that was popular at GitHub, and [davidcelis/sparkles](https://github.com/davidcelis/sparkles).
+A lightweight, self-hosted Slack bot for peer recognition. Give your teammates sparkles for being awesome.
+
+Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and GitHub's internal sparkles system.
 
 ## Features
 
-### Give Sparkles
-- `.sparkle @user [reason]` — Give someone a sparkle, optionally with a reason
-- `.sparkle @user1 @user2 @user3 [reason]` — Sparkle multiple people at once
-- React to any message with `:sparkle:` emoji — Gives the message author a sparkle
+### Dot Commands
+- `.sparkle @user [reason]` -- Give someone a sparkle
+- `.sparkle @user1 @user2 @user3 [reason]` -- Sparkle multiple people at once
+- `.sparkle party` -- Sparkle everyone who posted in the channel recently
+- `.sparkles` -- Get the all-time leaderboard sent to you as a DM
 
-### Sparkle Party
-- `.sparkle party [minutes]` — Give a sparkle to everyone who posted in the channel in the last N minutes (default: 15)
-
-### Leaderboard & History
-- `.sparkles` — Get the 30-day rolling leaderboard sent to you as a DM
-- `.sparkles @user` — View someone's sparkle history via DM
-- `.sparkles me` — View your own sparkle history via DM
+### Web Dashboard
+Dark-themed dashboard with Slack OAuth login:
+- Leaderboard with podium for top 3
+- Live activity feed (HTMX polling)
+- Channel stats with bar charts
+- Personal sparkle history (received/given)
 
 ### Fun Extras
-- **Self-sparkle shame** — You can sparkle yourself, but you'll be called out publicly. Nothing wrong with a little pat on the back, right?
-- **Bot protection** — Bots politely decline sparkles
-- **First sparkle celebration** — Extra fanfare when someone gets their very first sparkle
-- **Random encouragement** — Fun, randomized confirmation messages ("Boo-yah!", "Shut the front door!", etc.)
+- **Self-sparkle shame** -- Allowed exactly once, then escalating shame messages
+- **Bot sparkles** -- Accepted with quirky acknowledgments
+- **First sparkle celebration** -- Special fanfare for first-ever sparkles
+- **Personality packs** -- Playful (default), professional, sarcastic, pirate
+- **Aggregation batching** -- Multiple sparkles for the same person get combined into one message
 
 ## How It Works
 
 1. Invite Sparklebot to any channel
-2. Someone types `.sparkle @teammate for helping me debug that nasty race condition`
-3. Sparklebot replies in-channel confirming the sparkle and showing the recipient's new total
-4. The team reacts to the original `.sparkle` message — that's the recognition moment
-5. Want to see who's on top? `.sparkles` sends you the leaderboard privately
+2. `.sparkle @teammate for helping me debug that race condition`
+3. Sparklebot batches nearby sparkles and posts a single confirmation
+4. `.sparkles` sends you the leaderboard privately
+5. Visit the dashboard for stats, history, and channel breakdowns
 
 ## Tech Stack
 
-- **Runtime:** Node.js
-- **Slack SDK:** [@slack/bolt](https://github.com/slackapi/bolt-js)
+- **Runtime:** Node.js 22
+- **Slack SDK:** [@slack/bolt](https://github.com/slackapi/bolt-js) (Socket Mode)
 - **Database:** SQLite via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
-- **Deployment:** Single container, Kubernetes-ready
+- **Dashboard:** Express 5 + EJS + HTMX 2.0.4
+- **Deployment:** Helm chart, single container on Kubernetes
 
 ## Setup
 
 ### 1. Create a Slack App
 
-Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app. Required bot token scopes:
+Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app.
 
-- `chat:write` — Post sparkle confirmations
-- `channels:history` — Read messages for party mode and dot commands
-- `groups:history` — Same for private channels
-- `reactions:read` — Detect `:sparkle:` emoji reactions
-- `users:read` — Validate sparkle recipients
-- `im:write` — Send DM leaderboards and history
+**Socket Mode:** Enable and generate an App-Level Token with `connections:write` scope.
 
-Subscribe to these bot events:
-- `message.channels` — Listen for `.sparkle` / `.sparkles` commands
-- `message.groups` — Same for private channels
-- `reaction_added` — Listen for `:sparkle:` emoji reactions
+**Bot Token Scopes:** `chat:write`, `channels:history`, `groups:history`, `users:read`, `im:write`
 
-### 2. Configure Environment
+**Bot Events:** `message.channels`, `message.groups`
+
+**OAuth (for dashboard):** Note the Client ID and Client Secret. Add your redirect URL (`https://yourhost/auth/callback`).
+
+### 2. Configure
 
 ```bash
 cp .env.example .env
-```
-
-```
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_SIGNING_SECRET=your-signing-secret
-SLACK_APP_TOKEN=xapp-your-app-token  # if using socket mode
-PORT=3000
+# Fill in your Slack tokens
 ```
 
 ### 3. Run
@@ -78,17 +72,39 @@ npm install
 npm start
 ```
 
-### 4. Invite to Channels
+Dashboard at `http://localhost:3000`. Bot connects via Socket Mode (no ingress needed for Slack traffic).
 
-Sparklebot only listens in channels it's been invited to. In any channel:
+### 4. Invite to Channels
 
 ```
 /invite @Sparklebot
 ```
 
+## Personalization
+
+All configurable via environment variables (see `.env.example`):
+
+| Setting | Env Var | Default |
+|---------|---------|---------|
+| Currency name | `SPARKLE_CURRENCY` | sparkle |
+| Display emoji | `SPARKLE_EMOJI` | sparkles emoji |
+| Personality | `SPARKLE_PERSONALITY` | playful |
+| Brand colors | `SPARKLE_COLOR_PRIMARY` / `SPARKLE_COLOR_ACCENT` | #6C5CE7 / #FFEAA7 |
+| Party lookback | `SPARKLE_PARTY_MINUTES` | 30 |
+
+Commands are always `.sparkle` and `.sparkles` regardless of currency name.
+
 ## Deployment
 
-Includes Kubernetes manifests in `k8s/`. See deployment docs for details.
+Helm chart in `helm/sparklebot/`. Requires an existing Kubernetes Secret with Slack tokens.
+
+```bash
+helm install sparklebot helm/sparklebot/ \
+  --set ingress.host=sparklebot.example.com \
+  --set slack.existingSecret=sparklebot-slack
+```
+
+Single replica only (SQLite). Uses a PVC for data persistence (default: 5Gi ceph-block).
 
 ## License
 
