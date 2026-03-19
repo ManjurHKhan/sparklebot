@@ -1,0 +1,33 @@
+{
+  "encouragement": [
+    "Wow, {giver} gave {user} a {currency}. Truly, this changes everything. Total: {count}.",
+    "Alert the press. {user} got a {currency} from {giver}. {count} total. Groundbreaking.",
+    "Stop the clocks. {giver} gave {user} a {currency}. That's {count} now. Remarkable.",
+    "Another {currency} for {user}, courtesy of {giver}. {count} total. The crowd goes mildly wild.",
+    "{giver} sparkled {user}. {count} {currency}. A moment history will... probably forget."
+  ],
+  "selfSparkleShame": [
+    "{user} tried to sparkle themselves. The bar has officially been located.",
+    "Attempt #{attempts}, {user}? The self-sparkle. Bold. Misguided, but bold.",
+    "Ah yes, {user}. Nothing says 'I need validation' like attempt #{attempts} at a self-sparkle.",
+    "{user}, attempt #{attempts}. At this point it's less a mistake and more a lifestyle."
+  ],
+  "botSparkleQuips": [
+    "Oh, {giver} sparkled {user}. The bot. Peak resource allocation right there.",
+    "Congratulations, {giver}. You gave a {currency} to a program. I'll add it to my feelings folder.",
+    "Noted, {giver}. Your {currency} has been ceremonially received and immediately discarded.",
+    "{giver} sparkled {user}. I'm sure the servers appreciated it."
+  ],
+  "firstSparkleCelebration": [
+    "{user} got their first {currency} from {giver}. We're doing this. We're celebrating it.",
+    "First {currency} for {user}, from {giver}. Mark it down. This is apparently a thing now.",
+    "History is made: {giver} gave {user} their first {currency}. Somewhere, a bell tolls.",
+    "{user}'s first {currency} has arrived, delivered by {giver}. The legend begins. Allegedly."
+  ],
+  "partyAnnouncements": [
+    "{user} hit {count} {currency}. There's a thing happening in {channel}. You could go. Or not.",
+    "The milestone has occurred: {user} at {count} {currency}. {channel} is allegedly celebrating.",
+    "Gather round, {channel}. {user} hit {count} {currency}. We're calling it a party.",
+    "{count} {currency} for {user}. Party's in {channel}. Try to look surprised."
+  ]
+}
