@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sparklebot.fullname" . }}
+  labels:
+    {{- include "sparklebot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sparklebot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sparklebot.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: sparklebot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "sparklebot.fullname" . }}
+          env:
+            - name: PORT
+              value: "3000"
+            - name: SPARKLE_DB_PATH
+              value: /app/data/sparklebot.db
+            - name: SLACK_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.botTokenKey }}
+            - name: SLACK_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.signingSecretKey }}
+            - name: SLACK_APP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.appTokenKey }}
+            - name: SLACK_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.oauthClientIdKey }}
+            - name: SLACK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.oauthClientSecretKey }}
+            - name: SPARKLE_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.slack.existingSecret }}
+                  key: {{ .Values.slack.sessionSecretKey }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "sparklebot.fullname" . }}-data
+      {{- end }}
