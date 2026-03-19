@@ -1,0 +1,16 @@
+{
+  "name": "sparklebot",
+  "version": "1.0.0",
+  "description": "A lightweight Slack bot for peer recognition. Give your teammates sparkles for being awesome.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "keywords": ["slack", "bot", "recognition", "sparkles"],
+  "license": "MIT",
+  "dependencies": {
+    "@slack/bolt": "^4.1.0",
+    "better-sqlite3": "^11.7.0"
+  }
+}
