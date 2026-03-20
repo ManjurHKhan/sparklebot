@@ -11,6 +11,7 @@ function makeMockClient() {
       history: vi.fn(),
       info: vi.fn().mockResolvedValue({ channel: { name: 'test-channel' } }),
     },
+    auth: { test: vi.fn().mockResolvedValue({ user_id: 'UBOT', team_id: 'T1234' }) },
     chat: { postMessage: vi.fn().mockResolvedValue({}) },
   };
 }
@@ -140,5 +141,30 @@ describe('handleSparkle integration', () => {
     const message = { text: '.sparkle ', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(mockClient.chat.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates repeated mention targets', async () => {
+    const message = { text: '.sparkle <@U2> <@U2> <@U2> great', user: 'U1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    expect(db.getTotalReceived('U2')).toBe(1);
+    expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('responds with bot quip when sparkling the bot', async () => {
+    const message = { text: '.sparkle <@UBOT> thanks', user: 'U1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
+    // Bot sparkle should not be recorded in DB
+    expect(db.getTotalReceived('UBOT')).toBe(0);
+  });
+
+  it('handles mix of bot, self, and normal targets', async () => {
+    const message = { text: '.sparkle <@UBOT> <@U1> <@U2> reason', user: 'U1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    // Bot gets quip, self gets sparkle (first time), U2 gets sparkle
+    expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(3);
+    expect(db.getTotalReceived('UBOT')).toBe(0);
+    expect(db.getTotalReceived('U1')).toBe(1);
+    expect(db.getTotalReceived('U2')).toBe(1);
   });
 });
