@@ -1,12 +1,12 @@
 # Build stage -- install deps with native compilation support
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Runtime stage -- minimal image
-FROM node:22-alpine
+FROM node:24-alpine
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY src/ ./src/
