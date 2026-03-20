@@ -9,8 +9,10 @@ describe('formatLeaderboard', () => {
     { receiver_id: 'U4', receiver_name: 'dave', count: 25 },
   ];
 
+  const config = { currency: 'sparkle', currencyPlural: 'sparkles' };
+
   it('formats leaderboard with medals for top 3', () => {
-    const text = formatLeaderboard(board, { userId: 'U1', rank: 1, count: 42 }, 'sparkles');
+    const text = formatLeaderboard(board, { userId: 'U1', rank: 1, count: 42 }, config);
     expect(text).toContain('\uD83E\uDD47');
     expect(text).toContain('\uD83E\uDD48');
     expect(text).toContain('\uD83E\uDD49');
@@ -19,13 +21,14 @@ describe('formatLeaderboard', () => {
   });
 
   it('shows user rank when not in top 10', () => {
-    const text = formatLeaderboard(board, { userId: 'U99', rank: 14, count: 5 }, 'sparkles');
+    const text = formatLeaderboard(board, { userId: 'U99', rank: 14, count: 5 }, config);
     expect(text).toContain('#14');
     expect(text).toContain('5');
   });
 
   it('uses custom currency name', () => {
-    const text = formatLeaderboard(board, { userId: 'U1', rank: 1, count: 42 }, 'kudos');
+    const customConfig = { currency: 'kudo', currencyPlural: 'kudos' };
+    const text = formatLeaderboard(board, { userId: 'U1', rank: 1, count: 42 }, customConfig);
     expect(text).toContain('kudos');
   });
 });

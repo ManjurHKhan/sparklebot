@@ -11,9 +11,6 @@
 export function parseSparkleCommand(text) {
   if (!text) return null;
 
-  // Must start with ".sparkle " (with trailing space) OR be exactly ".sparkle" -- but
-  // we need at least one argument, so ".sparkle" alone returns null too.
-  // ".sparkles" (with s) is a different command and must return null.
   if (!text.startsWith('.sparkle ')) return null;
 
   const rest = text.slice('.sparkle '.length).trim();
@@ -36,8 +33,6 @@ export function parseSparkleCommand(text) {
       targets.push({ id: match[1], raw: `<@${match[1]}>` });
       remaining = remaining.slice(match[0].length);
     } else {
-      // No more mentions. If we already have targets the rest is the reason.
-      // If we have NO targets, treat the first word as a plain text target.
       if (targets.length === 0) {
         const spaceIdx = remaining.indexOf(' ');
         if (spaceIdx === -1) {
@@ -57,17 +52,38 @@ export function parseSparkleCommand(text) {
   return { isParty: false, targets, reason };
 }
 
+// Cache display names and channel names to avoid repeated API calls
+const nameCache = new Map();
+const channelCache = new Map();
+
+async function getDisplayName(client, userId) {
+  if (nameCache.has(userId)) return nameCache.get(userId);
+  try {
+    const result = await client.users.info({ user: userId });
+    const name = result.user.profile.display_name || result.user.real_name || result.user.name;
+    nameCache.set(userId, name);
+    return name;
+  } catch {
+    return userId;
+  }
+}
+
+async function getChannelName(client, channelId) {
+  if (channelCache.has(channelId)) return channelCache.get(channelId);
+  try {
+    const result = await client.conversations.info({ channel: channelId });
+    const name = result.channel.name;
+    channelCache.set(channelId, name);
+    return name;
+  } catch {
+    return channelId;
+  }
+}
+
 /**
  * Handle a .sparkle command event.
- * @param {object} opts
- * @param {object} opts.message  - Slack message object { text, user, channel }
- * @param {object} opts.client   - Slack Web API client
- * @param {object} opts.db       - DB instance from createDb
- * @param {object} opts.batcher  - Batcher instance
- * @param {object} opts.messages - Messages instance from createMessages
- * @param {object} opts.config   - Config object from loadConfig
  */
-export async function handleSparkle({ message, client, db, batcher, messages, config }) {
+export async function handleSparkle({ message, client, db, messages, config }) {
   const parsed = parseSparkleCommand(message.text);
   if (!parsed) return;
 
@@ -78,29 +94,59 @@ export async function handleSparkle({ message, client, db, batcher, messages, co
     return;
   }
 
+  const giverName = await getDisplayName(client, giverId);
+  const channelName = await getChannelName(client, channelId);
+
   for (const target of parsed.targets) {
     const receiverId = target.id ?? target.raw;
-    const receiverName = target.id ?? target.raw;
+    const receiverName = target.id ? await getDisplayName(client, target.id) : target.raw;
     const isSelf = target.id === giverId;
 
     if (isSelf) {
       const { firstTime, attempts } = db.recordSelfSparkle(giverId);
       if (firstTime) {
-        // First self-sparkle: allow it, record in DB, add to batcher
-        db.insertSparkle({ giverId, receiverId, receiverName, reason: parsed.reason, channelId });
-        const isFirstSparkle = false; // can't be first because recordSelfSparkle already inserted self record
-        batcher.add({ receiverId, channelId, giverId, giverName: giverId, reason: parsed.reason, isFirstSparkle, receiverName });
+        db.insertSparkle({ giverId, giverName, receiverId, receiverName, reason: parsed.reason, channelId, channelName });
+        const totalCount = db.getTotalReceived(receiverId);
+        const text = formatSparkle({ giverName, receiverName, reason: parsed.reason, totalCount, config });
+        await client.chat.postMessage({ channel: channelId, text });
       } else {
-        // Subsequent self-sparkle: post shame message, do NOT insert
-        const shameText = messages.selfSparkleShame({ user: giverId, attempts });
+        const shameText = messages.selfSparkleShame({ user: `:${giverName}:`, attempts });
         await client.chat.postMessage({ channel: channelId, text: shameText });
       }
     } else {
       const isFirstSparkle = db.isFirstSparkle(receiverId);
-      db.insertSparkle({ giverId, receiverId, receiverName, reason: parsed.reason, channelId });
-      batcher.add({ receiverId, channelId, giverId, giverName: giverId, reason: parsed.reason, isFirstSparkle, receiverName });
+      db.insertSparkle({ giverId, giverName, receiverId, receiverName, reason: parsed.reason, channelId, channelName });
+      const totalCount = db.getTotalReceived(receiverId);
+
+      let text;
+      if (isFirstSparkle) {
+        text = messages.firstSparkleCelebration({
+          giver: `:${giverName}:`,
+          user: `:${receiverName}:`,
+          currency: config.currency,
+        });
+      } else {
+        text = formatSparkle({ giverName, receiverName, reason: parsed.reason, totalCount, config });
+      }
+      await client.chat.postMessage({ channel: channelId, text });
     }
   }
+}
+
+function tierEmoji(count) {
+  if (count >= 100) return ':gem:';         // 100+ diamond
+  if (count >= 50)  return ':star2:';        // 50+ glowing star
+  if (count >= 25)  return ':dizzy:';        // 25+ dizzy star
+  if (count >= 10)  return ':sparkle:';      // 10+ sparkle
+  if (count >= 5)   return ':star:';         // 5+ star
+  return ':sparkles:';                       // default sparkles
+}
+
+function formatSparkle({ giverName, receiverName, reason, totalCount, config }) {
+  const currency = totalCount === 1 ? config.currency : config.currencyPlural;
+  const reasonPart = reason ? ` for _${reason}_` : '';
+  const emoji = tierEmoji(totalCount);
+  return `${emoji} *:${giverName}:* gave a ${config.currency} to *:${receiverName}:*${reasonPart}. *:${receiverName}:* now has *${totalCount}* ${currency}. ${emoji}`;
 }
 
 async function handleParty({ giverId, channelId, client, db, messages, config }) {
@@ -116,7 +162,6 @@ async function handleParty({ giverId, channelId, client, db, messages, config })
   const partyUsers = [];
 
   for (const msg of historyResult.messages || []) {
-    // Skip bots, skip triggerer, skip duplicates
     if (msg.bot_id) continue;
     if (msg.user === giverId) continue;
     if (!msg.user) continue;
@@ -128,17 +173,18 @@ async function handleParty({ giverId, channelId, client, db, messages, config })
   if (partyUsers.length === 0) {
     await client.chat.postMessage({
       channel: channelId,
-      text: `No one to party with! :sob: No one else has posted in the last ${config.partyMinutes} minutes.`,
+      text: `No one to party with! No one else has posted in the last ${config.partyMinutes} minutes.`,
     });
     return;
   }
 
-  // Insert sparkles for all party recipients
+  const giverName = await getDisplayName(client, giverId);
+  const channelName = await getChannelName(client, channelId);
   for (const userId of partyUsers) {
-    db.insertSparkle({ giverId, receiverId: userId, receiverName: userId, reason: 'party', channelId });
+    const receiverName = await getDisplayName(client, userId);
+    db.insertSparkle({ giverId, giverName, receiverId: userId, receiverName, reason: 'party', channelId, channelName });
   }
 
-  // Post single party announcement directly (bypass batcher)
-  const partyText = messages.partyAnnouncement({ user: giverId, count: partyUsers.length, channel: channelId });
+  const partyText = messages.partyAnnouncement({ user: `:${giverName}:`, count: partyUsers.length, channel: `<#${channelId}>` });
   await client.chat.postMessage({ channel: channelId, text: partyText });
 }
