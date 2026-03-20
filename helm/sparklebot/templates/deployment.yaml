@@ -15,9 +15,11 @@ spec:
         {{- include "sparklebot.selectorLabels" . | nindent 8 }}
     spec:
       securityContext:
-        runAsNonRoot: true
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: sparklebot
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
