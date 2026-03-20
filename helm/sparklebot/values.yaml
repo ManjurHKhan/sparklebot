@@ -26,6 +26,14 @@ sparkle:
   personality: playful
   partyMinutes: 30
 
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext: {}
+
 resources:
   requests:
     cpu: 50m
