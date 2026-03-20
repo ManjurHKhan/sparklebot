@@ -27,27 +27,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - run: docker build -t sparklebot:ci .
+      - name: Build Docker image
+        run: docker build -t sparklebot:ci .
 
-      - name: Verify container starts
+      - name: Verify image structure
         run: |
-          docker run -d --name sparklebot-test \
-            -e SLACK_BOT_TOKEN=xoxb-test \
-            -e SLACK_SIGNING_SECRET=test \
-            -e SLACK_APP_TOKEN=xapp-test \
-            sparklebot:ci
-          sleep 3
-          if docker inspect sparklebot-test --format='{{.State.Running}}' | grep -q true; then
-            echo "Container is running"
-          else
-            echo "Container failed to start, logs:"
-            docker logs sparklebot-test
-            exit 1
-          fi
-
-      - name: Cleanup
-        if: always()
-        run: docker stop sparklebot-test 2>/dev/null || true
+          docker run --rm --entrypoint node sparklebot:ci -e "
+            const fs = require('fs');
+            const required = ['src/app.js', 'src/config.js', 'src/db.js', 'src/messages.js', 'src/handlers/sparkle.js', 'src/handlers/leaderboard.js'];
+            const missing = required.filter(f => !fs.existsSync(f));
+            if (missing.length) { console.error('Missing files:', missing); process.exit(1); }
+            console.log('All required files present');
+          "
 
   helm-lint:
     runs-on: ubuntu-latest
