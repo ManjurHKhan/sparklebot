@@ -37,7 +37,19 @@ boltApp.message(async ({ message, client }) => {
   if (!message.text) return;
 
   try {
-    if (message.text.startsWith('.sparkle ') || message.text === '.sparkle party') {
+    if (message.text === '.sparkle' || message.text === '.sparkle help') {
+      await client.chat.postMessage({
+        channel: message.channel,
+        text: [
+          `*${config.emoji} Sparklebot Commands*`,
+          '',
+          '`.sparkle @user [reason]` — give someone a sparkle',
+          '`.sparkle @user1 @user2 [reason]` — sparkle multiple people',
+          '`.sparkle party` — sparkle everyone active in the last 30 min',
+          '`.sparkles` — see the all-time leaderboard (via DM)',
+        ].join('\n'),
+      });
+    } else if (message.text.startsWith('.sparkle ') || message.text === '.sparkle party') {
       await handleSparkle({ message, client, db, messages, config });
     } else if (message.text === '.sparkles') {
       await handleLeaderboard({ message, client, db, config });
