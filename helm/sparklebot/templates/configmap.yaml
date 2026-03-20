@@ -9,13 +9,4 @@ data:
   SPARKLE_CURRENCY_PLURAL: {{ .Values.sparkle.currencyPlural | quote }}
   SPARKLE_EMOJI: {{ .Values.sparkle.emoji | quote }}
   SPARKLE_PERSONALITY: {{ .Values.sparkle.personality | quote }}
-  SPARKLE_COLOR_PRIMARY: {{ .Values.sparkle.colorPrimary | quote }}
-  SPARKLE_COLOR_ACCENT: {{ .Values.sparkle.colorAccent | quote }}
-  SPARKLE_LOGO_URL: {{ .Values.sparkle.logoUrl | quote }}
   SPARKLE_PARTY_MINUTES: {{ .Values.sparkle.partyMinutes | quote }}
-  SPARKLE_BATCH_INITIAL_SECONDS: {{ .Values.sparkle.batchInitialSeconds | quote }}
-  SPARKLE_BATCH_EXTEND_SECONDS: {{ .Values.sparkle.batchExtendSeconds | quote }}
-  SPARKLE_BATCH_MAX_SECONDS: {{ .Values.sparkle.batchMaxSeconds | quote }}
-  {{- if .Values.sparkle.oauthRedirectUri }}
-  SPARKLE_OAUTH_REDIRECT_URI: {{ .Values.sparkle.oauthRedirectUri | quote }}
-  {{- end }}

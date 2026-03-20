@@ -14,7 +14,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - run: npm ci
@@ -32,20 +32,18 @@ jobs:
       - name: Verify container starts
         run: |
           docker run -d --name sparklebot-test \
-            -e SPARKLE_SESSION_SECRET=ci-test \
-            -e PORT=3000 \
-            -p 3000:3000 \
+            -e SLACK_BOT_TOKEN=xoxb-test \
+            -e SLACK_SIGNING_SECRET=test \
+            -e SLACK_APP_TOKEN=xapp-test \
             sparklebot:ci
-          for i in $(seq 1 10); do
-            if curl -sf http://localhost:3000/healthz; then
-              echo " healthz OK"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "healthz failed, container logs:"
-          docker logs sparklebot-test
-          exit 1
+          sleep 3
+          if docker inspect sparklebot-test --format='{{.State.Running}}' | grep -q true; then
+            echo "Container is running"
+          else
+            echo "Container failed to start, logs:"
+            docker logs sparklebot-test
+            exit 1
+          fi
 
       - name: Cleanup
         if: always()

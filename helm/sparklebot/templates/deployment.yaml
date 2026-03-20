@@ -20,16 +20,10 @@ spec:
         - name: sparklebot
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 3000
-              protocol: TCP
           envFrom:
             - configMapRef:
                 name: {{ include "sparklebot.fullname" . }}
           env:
-            - name: PORT
-              value: "3000"
             - name: SPARKLE_DB_PATH
               value: /app/data/sparklebot.db
             - name: SLACK_BOT_TOKEN
@@ -47,31 +41,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.slack.existingSecret }}
                   key: {{ .Values.slack.appTokenKey }}
-            - name: SLACK_CLIENT_ID
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.slack.existingSecret }}
-                  key: {{ .Values.slack.oauthClientIdKey }}
-            - name: SLACK_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.slack.existingSecret }}
-                  key: {{ .Values.slack.oauthClientSecretKey }}
-            - name: SPARKLE_SESSION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.slack.existingSecret }}
-                  key: {{ .Values.slack.sessionSecretKey }}
           livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 3000
+            exec:
+              command: ["node", "-e", "process.exit(0)"]
             initialDelaySeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 3000
-            initialDelaySeconds: 5
+            periodSeconds: 30
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.persistence.enabled }}

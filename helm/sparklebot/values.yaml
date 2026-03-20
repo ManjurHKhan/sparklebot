@@ -12,36 +12,19 @@ persistence:
   storageClass: ceph-block
   accessMode: ReadWriteOnce
 
-ingress:
-  enabled: true
-  className: nginx
-  host: sparklebot.example.com
-  tls: true
-
 slack:
   # References to existing K8s Secret (not created by this chart)
   existingSecret: sparklebot-slack
   botTokenKey: bot-token
   signingSecretKey: signing-secret
   appTokenKey: app-token
-  oauthClientIdKey: oauth-client-id
-  oauthClientSecretKey: oauth-client-secret
-  sessionSecretKey: session-secret
 
 sparkle:
   currency: sparkle
   currencyPlural: sparkles
-  emoji: "✨"
+  emoji: ""
   personality: playful
-  colorPrimary: "#6C5CE7"
-  colorAccent: "#FFEAA7"
-  logoUrl: ""
   partyMinutes: 30
-  batchInitialSeconds: 15
-  batchExtendSeconds: 15
-  batchMaxSeconds: 120
-  # Must match Slack app OAuth redirect URL config
-  oauthRedirectUri: ""  # e.g. https://sparklebot.example.com/auth/callback
 
 resources:
   requests:
