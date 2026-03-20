@@ -4,10 +4,12 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS sparkles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     giver_id TEXT NOT NULL,
+    giver_name TEXT,
     receiver_id TEXT NOT NULL,
     receiver_name TEXT,
     reason TEXT,
     channel_id TEXT NOT NULL,
+    channel_name TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -24,16 +26,28 @@ const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_sparkles_giver ON sparkles(giver_id);
 `;
 
+// Migration: add columns if missing (for existing DBs)
+function migrate(db) {
+  const cols = db.prepare("PRAGMA table_info(sparkles)").all().map(c => c.name);
+  if (!cols.includes('giver_name')) {
+    db.exec("ALTER TABLE sparkles ADD COLUMN giver_name TEXT");
+  }
+  if (!cols.includes('channel_name')) {
+    db.exec("ALTER TABLE sparkles ADD COLUMN channel_name TEXT");
+  }
+}
+
 export function createDb(dbPath) {
   const db = new Database(dbPath);
 
   db.pragma('journal_mode = WAL');
   db.exec(SCHEMA);
+  migrate(db);
 
   const stmts = {
     insertSparkle: db.prepare(`
-      INSERT INTO sparkles (giver_id, receiver_id, receiver_name, reason, channel_id)
-      VALUES (@giverId, @receiverId, @receiverName, @reason, @channelId)
+      INSERT INTO sparkles (giver_id, giver_name, receiver_id, receiver_name, reason, channel_id, channel_name)
+      VALUES (@giverId, @giverName, @receiverId, @receiverName, @reason, @channelId, @channelName)
     `),
 
     getLeaderboard: db.prepare(`
@@ -75,7 +89,7 @@ export function createDb(dbPath) {
     `),
 
     getChannelStats: db.prepare(`
-      SELECT channel_id, COUNT(*) as count
+      SELECT channel_id, channel_name, COUNT(*) as count
       FROM sparkles
       GROUP BY channel_id
       ORDER BY count DESC
@@ -102,8 +116,8 @@ export function createDb(dbPath) {
   };
 
   return {
-    insertSparkle({ giverId, receiverId, receiverName = null, reason = null, channelId }) {
-      stmts.insertSparkle.run({ giverId, receiverId, receiverName, reason, channelId });
+    insertSparkle({ giverId, giverName = null, receiverId, receiverName = null, reason = null, channelId, channelName = null }) {
+      stmts.insertSparkle.run({ giverId, giverName, receiverId, receiverName, reason, channelId, channelName });
     },
 
     getLeaderboard(limit) {

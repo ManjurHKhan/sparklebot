@@ -5,19 +5,21 @@
   "description": "A lightweight Slack bot for peer recognition. Give your teammates sparkles for being awesome.",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node --watch src/app.js",
+    "start": "node --env-file=.env src/app.js",
+    "dev": "node --env-file=.env --watch src/app.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["slack", "bot", "recognition", "sparkles"],
+  "keywords": [
+    "slack",
+    "bot",
+    "recognition",
+    "sparkles"
+  ],
   "license": "MIT",
   "dependencies": {
     "@slack/bolt": "^4.1.0",
-    "better-sqlite3": "^12.6.2",
-    "cookie-session": "^2.1.0",
-    "ejs": "^3.1.10",
-    "express": "^5.1.0"
+    "better-sqlite3": "^12.6.2"
   },
   "devDependencies": {
     "vitest": "^3.1.1"
