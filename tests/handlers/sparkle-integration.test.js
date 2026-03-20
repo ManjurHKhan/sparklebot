@@ -26,11 +26,14 @@ describe('handleSparkle integration', () => {
     mockClient = makeMockClient();
   });
 
-  it('records sparkle and posts message', async () => {
+  it('records sparkle and posts message with bold names', async () => {
     const message = { text: '.sparkle <@U2> great work', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
     expect(db.getTotalReceived('U2')).toBe(1);
+    // First sparkle uses celebration template -- names should be bold
+    const call = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(call.text).toContain('*TestUser*');
   });
 
   it('stores giver name and channel name in DB', async () => {
@@ -48,12 +51,14 @@ describe('handleSparkle integration', () => {
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks self-sparkle second time with shame message', async () => {
+  it('blocks self-sparkle second time with bold name in shame message', async () => {
     const message = { text: '.sparkle <@U1> self love', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(db.getTotalReceived('U1')).toBe(1);
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(2);
+    const shameCall = mockClient.chat.postMessage.mock.calls[1][0];
+    expect(shameCall.text).toContain('*TestUser*');
   });
 
   it('detects first sparkle and posts celebration', async () => {
@@ -64,13 +69,14 @@ describe('handleSparkle integration', () => {
     expect(db.getTotalReceived('U2')).toBe(1);
   });
 
-  it('posts regular format on second sparkle', async () => {
+  it('posts regular format on second sparkle with bold names and count', async () => {
     const message = { text: '.sparkle <@U2> nice', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(db.getTotalReceived('U2')).toBe(2);
     const secondCall = mockClient.chat.postMessage.mock.calls[1][0];
     expect(secondCall.text).toContain('*2*');
+    expect(secondCall.text).toContain('*TestUser*');
   });
 
   it('handles plain text target', async () => {
@@ -150,12 +156,15 @@ describe('handleSparkle integration', () => {
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('responds with bot quip when sparkling the bot', async () => {
+  it('responds with bot quip with bold names when sparkling the bot', async () => {
     const message = { text: '.sparkle <@UBOT> thanks', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(1);
-    // Bot sparkle should not be recorded in DB
     expect(db.getTotalReceived('UBOT')).toBe(0);
+    const quipCall = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(quipCall.text).toContain('*TestUser*');
+    // Verify auth.test was called to detect bot user
+    expect(mockClient.auth.test).toHaveBeenCalled();
   });
 
   it('handles mix of bot, self, and normal targets', async () => {
