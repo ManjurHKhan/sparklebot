@@ -139,7 +139,7 @@ export async function handleSparkle({ message, client, db, messages, config }) {
       if (isFirstSparkle) {
         const emoji = tierEmoji(totalCount);
         const currency = totalCount === 1 ? config.currency : config.currencyPlural;
-        const normalizedReason = parsed.reason ? parsed.reason.replace(/^for\s+/i, '').trim() : '';
+        const normalizedReason = parsed.reason ? parsed.reason.replace(/^for\b\s*/i, '').trim() : '';
         const reasonPart = normalizedReason ? ` for _${normalizedReason}_` : '';
         text = messages.firstSparkleCelebration({
           giver: `*${giverName}*`,
@@ -169,7 +169,7 @@ export function tierEmoji(count) {
 
 function formatSparkle({ giverName, receiverName, reason, totalCount, config }) {
   const currency = totalCount === 1 ? config.currency : config.currencyPlural;
-  const normalizedReason = reason ? reason.replace(/^for\s+/i, '').trim() : '';
+  const normalizedReason = reason ? reason.replace(/^for\b\s*/i, '').trim() : '';
   const reasonPart = normalizedReason ? ` for _${normalizedReason}_` : '';
   const emoji = tierEmoji(totalCount);
   return `${emoji} *${giverName}* gave a ${config.currency} to *${receiverName}*${reasonPart}. *${receiverName}* now has *${totalCount}* ${currency}. ${emoji}`;
