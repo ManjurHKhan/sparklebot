@@ -137,10 +137,17 @@ export async function handleSparkle({ message, client, db, messages, config }) {
 
       let text;
       if (isFirstSparkle) {
+        const emoji = tierEmoji(totalCount);
+        const currency = totalCount === 1 ? config.currency : config.currencyPlural;
+        const reasonPart = parsed.reason ? ` for _${parsed.reason}_` : '';
         text = messages.firstSparkleCelebration({
           giver: `*${giverName}*`,
           user: `*${receiverName}*`,
           currency: config.currency,
+          emoji,
+          count: totalCount,
+          currencyPlural: currency,
+          reason: reasonPart,
         });
       } else {
         text = formatSparkle({ giverName, receiverName, reason: parsed.reason, totalCount, config });
@@ -150,7 +157,7 @@ export async function handleSparkle({ message, client, db, messages, config }) {
   }
 }
 
-function tierEmoji(count) {
+export function tierEmoji(count) {
   if (count >= 100) return ':gem:';         // 100+ diamond
   if (count >= 50)  return ':star2:';        // 50+ glowing star
   if (count >= 25)  return ':dizzy:';        // 25+ dizzy star
@@ -197,11 +204,17 @@ async function handleParty({ giverId, channelId, client, db, messages, config })
 
   const giverName = await getDisplayName(client, giverId);
   const channelName = await getChannelName(client, channelId);
+  const recipientLines = [];
   for (const userId of partyUsers) {
     const receiverName = await getDisplayName(client, userId);
     db.insertSparkle({ giverId, giverName, receiverId: userId, receiverName, reason: 'party', channelId, channelName });
+    const totalCount = db.getTotalReceived(userId);
+    const emoji = tierEmoji(totalCount);
+    recipientLines.push(`${emoji} *${receiverName}* now has *${totalCount}* ✨`);
   }
 
-  const partyText = messages.partyAnnouncement({ user: `*${giverName}*`, count: partyUsers.length, channel: `<#${channelId}>` });
+  const recipients = recipientLines.join('\n> ');
+  const people = partyUsers.length === 1 ? 'person' : 'people';
+  const partyText = messages.partyAnnouncement({ user: `*${giverName}*`, count: partyUsers.length, channel: `<#${channelId}>`, currency: config.currency, recipients, people });
   await client.chat.postMessage({ channel: channelId, text: partyText });
 }

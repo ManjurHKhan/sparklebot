@@ -4,9 +4,15 @@ import { createDb } from '../../src/db.js';
 import { createMessages } from '../../src/messages.js';
 import loadConfig from '../../src/config.js';
 
-function makeMockClient() {
+function makeMockClient(userMap) {
+  const defaultUser = { profile: { display_name: 'TestUser' }, real_name: 'Test User', name: 'testuser' };
   return {
-    users: { info: vi.fn().mockResolvedValue({ user: { profile: { display_name: 'TestUser' }, real_name: 'Test User', name: 'testuser' } }) },
+    users: {
+      info: vi.fn().mockImplementation(({ user }) => {
+        const u = userMap?.[user] || defaultUser;
+        return Promise.resolve({ user: u });
+      }),
+    },
     conversations: {
       history: vi.fn(),
       info: vi.fn().mockResolvedValue({ channel: { name: 'test-channel' } }),
@@ -61,12 +67,28 @@ describe('handleSparkle integration', () => {
     expect(shameCall.text).toContain('*TestUser*');
   });
 
-  it('detects first sparkle and posts celebration', async () => {
+  it('detects first sparkle and posts celebration with emoji and count', async () => {
+    const message = { text: '.sparkle <@U2> great job', user: 'U1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    const call = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(call.text).toContain(':sparkles:');
+    expect(call.text).toContain('*1*');
+    expect(call.text).toContain('*TestUser*');
+    expect(db.getTotalReceived('U2')).toBe(1);
+  });
+
+  it('first sparkle with reason includes the reason', async () => {
+    const message = { text: '.sparkle <@U2> for helping debug', user: 'U1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    const call = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(call.text).toContain('helping debug');
+  });
+
+  it('first sparkle without reason omits reason text', async () => {
     const message = { text: '.sparkle <@U2>', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     const call = mockClient.chat.postMessage.mock.calls[0][0];
-    expect(call.text).toBeTruthy();
-    expect(db.getTotalReceived('U2')).toBe(1);
+    expect(call.text).not.toContain('for _');
   });
 
   it('posts regular format on second sparkle with bold names and count', async () => {
@@ -94,22 +116,49 @@ describe('handleSparkle integration', () => {
     expect(mockClient.chat.postMessage).toHaveBeenCalledTimes(2);
   });
 
-  it('handles party mode with recent posters', async () => {
+  it('handles party mode with recipient names and counts', async () => {
+    // Use unique user IDs to avoid module-level nameCache from prior tests
+    mockClient = makeMockClient({
+      PA1: { profile: { display_name: 'Manjur' }, real_name: 'Manjur Khan', name: 'manjur' },
+      PA2: { profile: { display_name: 'Brian' }, real_name: 'Brian P', name: 'brian' },
+      PA3: { profile: { display_name: 'Andrew' }, real_name: 'Andrew S', name: 'andrew' },
+    });
+    mockClient.conversations.history.mockResolvedValue({
+      messages: [
+        { user: 'PA2', ts: '1234' },
+        { user: 'PA3', ts: '1235' },
+        { user: 'PA1', ts: '1236' },
+        { user: 'UBOT', ts: '1237', bot_id: 'B1' },
+      ],
+    });
+    const message = { text: '.sparkle party', user: 'PA1', channel: 'C1' };
+    await handleSparkle({ message, client: mockClient, db, messages, config });
+    expect(db.getTotalReceived('PA2')).toBe(1);
+    expect(db.getTotalReceived('PA3')).toBe(1);
+    expect(db.getTotalReceived('PA1')).toBe(0);
+    expect(db.getTotalReceived('UBOT')).toBe(0);
+    const call = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(call.text).toContain('*Manjur*');
+    expect(call.text).toContain('*Brian*');
+    expect(call.text).toContain('*Andrew*');
+    expect(call.text).toContain('now has');
+    expect(call.text).toContain('✨');
+    expect(call.text).not.toContain('{currency}');
+    expect(call.text).not.toContain('{recipients}');
+  });
+
+  it('party mode with 1 person uses singular person', async () => {
     mockClient.conversations.history.mockResolvedValue({
       messages: [
         { user: 'U2', ts: '1234' },
-        { user: 'U3', ts: '1235' },
-        { user: 'U1', ts: '1236' },
-        { user: 'UBOT', ts: '1237', bot_id: 'B1' },
+        { user: 'U1', ts: '1235' },
       ],
     });
     const message = { text: '.sparkle party', user: 'U1', channel: 'C1' };
     await handleSparkle({ message, client: mockClient, db, messages, config });
     expect(db.getTotalReceived('U2')).toBe(1);
-    expect(db.getTotalReceived('U3')).toBe(1);
-    expect(db.getTotalReceived('U1')).toBe(0);
-    expect(db.getTotalReceived('UBOT')).toBe(0);
-    expect(mockClient.chat.postMessage).toHaveBeenCalled();
+    const call = mockClient.chat.postMessage.mock.calls[0][0];
+    expect(call.text).not.toContain('{people}');
   });
 
   it('party mode skips duplicate users', async () => {
