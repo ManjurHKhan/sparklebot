@@ -82,6 +82,8 @@ describe('handleSparkle integration', () => {
     await handleSparkle({ message, client: mockClient, db, messages, config });
     const call = mockClient.chat.postMessage.mock.calls[0][0];
     expect(call.text).toContain('helping debug');
+    // Should not double "for" -- "for for helping debug"
+    expect(call.text).not.toContain('for _for ');
   });
 
   it('first sparkle without reason omits reason text', async () => {
