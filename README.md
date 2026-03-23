@@ -17,11 +17,13 @@ Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and Gi
 - `.sparkle bob` -- Sparkle anyone, even non-existent or joke targets (stored as-is)
 
 ### Fun Extras
-- **Tiered emoji** -- Sparkle count determines the emoji tier (sparkles -> star -> sparkle -> dizzy -> star2 -> gem at 100+)
+- **Tiered emoji** -- Sparkle count determines the emoji tier: ✨ (1-4) -> :star: (5-9) -> :sparkle: (10-24) -> :dizzy: (25-49) -> :star2: (50-99) -> :gem: (100+)
 - **Self-sparkle shame** -- Allowed exactly once per user (it counts!), then blocked with escalating shame messages that track your attempt count
 - **Bot sparkle quips** -- Sparkling the bot gets a witty response (not recorded as a real sparkle)
-- **First sparkle celebration** -- Special fanfare when someone receives their very first sparkle
+- **First sparkle celebration** -- Special fanfare with emoji, count, and reason when someone receives their very first sparkle
+- **Party mode details** -- Party sparkles show each recipient's name, total count, and tier emoji on individual lines
 - **Bold formatting** -- Names and counts are bold in all messages for readability
+- **Emoji-rich messages** -- Playful and pirate personalities use contextual emoji throughout responses
 - **Personality packs** -- Four built-in personalities: playful (default), professional, sarcastic, pirate
 - **Display name resolution** -- Uses Slack display names, not raw user IDs
 
@@ -37,7 +39,7 @@ Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and Gi
 - **Runtime:** Node.js 24
 - **Slack SDK:** [@slack/bolt](https://github.com/slackapi/bolt-js) (Socket Mode -- no inbound ports needed)
 - **Database:** SQLite via [better-sqlite3](https://github.com/WiseLibs/better-sqlite3)
-- **Testing:** Vitest (63 tests)
+- **Testing:** Vitest (75 tests)
 - **Deployment:** Docker + Helm chart for Kubernetes
 
 ## Quick Start
