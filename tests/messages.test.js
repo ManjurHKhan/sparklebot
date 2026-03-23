@@ -32,10 +32,15 @@ describe('messages', () => {
     expect(text).toContain('3');
   });
 
-  it('returns bot sparkle quips with giver name', () => {
+  it('returns bot sparkle quips as non-empty string', () => {
     const msg = createMessages('playful');
     const text = msg.botSparkleQuip({ user: 'sparklebot', giver: 'alice', currency: 'sparkle' });
-    expect(text).toContain('alice');
+    expect(typeof text).toBe('string');
+    expect(text.length).toBeGreaterThan(0);
+    // Not all quip templates use {giver}, so don't assert on specific vars
+    expect(text).not.toContain('{giver}');
+    expect(text).not.toContain('{user}');
+    expect(text).not.toContain('{currency}');
   });
 
   it('returns first sparkle celebration with all variables', () => {

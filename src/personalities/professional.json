@@ -25,9 +25,9 @@
     "{emoji} Congratulations to {user} on their first {currency}, awarded by {giver}{reason}. *{count}* ✨. {emoji}"
   ],
   "partyAnnouncements": [
-    "{user} has reached {count} {currency}. The team is gathering in {channel} to acknowledge this milestone.\n> {recipients}",
-    "Milestone reached: {user} at {count} {currency}. Please join the recognition in {channel}.\n> {recipients}",
-    "{user} has achieved {count} {currency}. A group acknowledgment is underway in {channel}.\n> {recipients}",
-    "Team recognition in progress: {user} has earned {count} {currency}. See {channel} for details.\n> {recipients}"
+    "{user} has recognized {count} colleagues with {currency} in {channel}. Well done.\n> {recipients}",
+    "Party recognition: {user} just sparkled {count} {people} in {channel}.\n> {recipients}",
+    "{user} has distributed {count} {currency} across {channel}. A group acknowledgment is underway.\n> {recipients}",
+    "Team recognition in progress: {user} has sparkled {count} {people} in {channel}.\n> {recipients}"
   ]
 }

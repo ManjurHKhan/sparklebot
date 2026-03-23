@@ -217,6 +217,7 @@ async function handleParty({ giverId, channelId, client, db, messages, config })
 
   const recipients = recipientLines.join('\n> ');
   const people = partyUsers.length === 1 ? 'person' : 'people';
-  const partyText = messages.partyAnnouncement({ user: `*${giverName}*`, count: partyUsers.length, channel: `<#${channelId}>`, currency: config.currency, recipients, people });
+  const currency = partyUsers.length === 1 ? config.currency : config.currencyPlural;
+  const partyText = messages.partyAnnouncement({ user: `*${giverName}*`, count: partyUsers.length, channel: `<#${channelId}>`, currency, recipients, people });
   await client.chat.postMessage({ channel: channelId, text: partyText });
 }
