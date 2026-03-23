@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseSparkleCommand } from '../../src/handlers/sparkle.js';
+import { parseSparkleCommand, tierEmoji } from '../../src/handlers/sparkle.js';
 
 describe('parseSparkleCommand', () => {
   it('parses single mention with reason', () => {
@@ -83,5 +83,37 @@ describe('parseSparkleCommand', () => {
     const result = parseSparkleCommand('.sparkle   <@U1>   great work  ');
     expect(result.targets[0].id).toBe('U1');
     expect(result.reason).toBe('great work');
+  });
+});
+
+describe('tierEmoji', () => {
+  it('returns :sparkles: for counts below 5', () => {
+    expect(tierEmoji(1)).toBe(':sparkles:');
+    expect(tierEmoji(4)).toBe(':sparkles:');
+  });
+
+  it('returns :star: for counts 5-9', () => {
+    expect(tierEmoji(5)).toBe(':star:');
+    expect(tierEmoji(9)).toBe(':star:');
+  });
+
+  it('returns :sparkle: for counts 10-24', () => {
+    expect(tierEmoji(10)).toBe(':sparkle:');
+    expect(tierEmoji(24)).toBe(':sparkle:');
+  });
+
+  it('returns :dizzy: for counts 25-49', () => {
+    expect(tierEmoji(25)).toBe(':dizzy:');
+    expect(tierEmoji(49)).toBe(':dizzy:');
+  });
+
+  it('returns :star2: for counts 50-99', () => {
+    expect(tierEmoji(50)).toBe(':star2:');
+    expect(tierEmoji(99)).toBe(':star2:');
+  });
+
+  it('returns :gem: for counts 100+', () => {
+    expect(tierEmoji(100)).toBe(':gem:');
+    expect(tierEmoji(500)).toBe(':gem:');
   });
 });

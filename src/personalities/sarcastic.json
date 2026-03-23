@@ -19,15 +19,15 @@
     "{giver} sparkled {user}. I'm sure the servers appreciated it."
   ],
   "firstSparkleCelebration": [
-    "{user} got their first {currency} from {giver}. We're doing this. We're celebrating it.",
-    "First {currency} for {user}, from {giver}. Mark it down. This is apparently a thing now.",
-    "History is made: {giver} gave {user} their first {currency}. Somewhere, a bell tolls.",
-    "{user}'s first {currency} has arrived, delivered by {giver}. The legend begins. Allegedly."
+    "{emoji} {user} got their first {currency} from {giver}{reason}. *{count}* ✨. We're doing this. We're celebrating it. {emoji}",
+    "{emoji} First {currency} for {user}, from {giver}{reason}. *{count}* ✨. Mark it down. This is apparently a thing now. {emoji}",
+    "{emoji} History is made: {giver} gave {user} their first {currency}{reason}. *{count}* ✨. Somewhere, a bell tolls. {emoji}",
+    "{emoji} {user}'s first {currency} has arrived, delivered by {giver}{reason}. *{count}* ✨. The legend begins. Allegedly. {emoji}"
   ],
   "partyAnnouncements": [
-    "{user} hit {count} {currency}. There's a thing happening in {channel}. You could go. Or not.",
-    "The milestone has occurred: {user} at {count} {currency}. {channel} is allegedly celebrating.",
-    "Gather round, {channel}. {user} hit {count} {currency}. We're calling it a party.",
-    "{count} {currency} for {user}. Party's in {channel}. Try to look surprised."
+    "{user} sparkled {count} {people} in {channel}. There's a thing happening. You could go. Or not.\n> {recipients}",
+    "Mass recognition event: {user} just sparkled {count} {people} in {channel}. Allegedly celebrating.\n> {recipients}",
+    "Gather round, {channel}. {user} sparkled {count} {people}. We're calling it a party.\n> {recipients}",
+    "{user} dropped {count} {currency} on {channel}. Party's here. Try to look surprised.\n> {recipients}"
   ]
 }

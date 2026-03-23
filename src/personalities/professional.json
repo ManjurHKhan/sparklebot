@@ -9,7 +9,7 @@
   "selfSparkleShame": [
     "{user}, self-recognition is noted but not permitted. Please direct your appreciation outward.",
     "This appears to be attempt #{attempts} at self-recognition, {user}. The system discourages this practice.",
-    "{user}, self-awarded {currency} do not count toward your total. Attempt #{attempts} logged.",
+    "{user}, self-awarded recognition does not count toward your total. Attempt #{attempts} logged.",
     "Noted, {user}. Attempt #{attempts}. Recognition should flow between colleagues, not in loops."
   ],
   "botSparkleQuips": [
@@ -19,15 +19,15 @@
     "Thank you, {giver}. Unfortunately, {user} is not configured to receive {currency}."
   ],
   "firstSparkleCelebration": [
-    "{user} has received their first {currency} from {giver}. A milestone worth noting.",
-    "First recognition achieved: {giver} awarded {user} their inaugural {currency}. Well done.",
-    "{user} enters the recognition program with their first {currency}, courtesy of {giver}.",
-    "Congratulations to {user} on their first {currency}, awarded by {giver}."
+    "{emoji} {user} has received their first {currency} from {giver}{reason}. Now has *{count}* ✨. A milestone worth noting. {emoji}",
+    "{emoji} First recognition achieved: {giver} awarded {user} their inaugural {currency}{reason}. *{count}* ✨. Well done. {emoji}",
+    "{emoji} {user} enters the recognition program with their first {currency}, courtesy of {giver}{reason}. *{count}* ✨. {emoji}",
+    "{emoji} Congratulations to {user} on their first {currency}, awarded by {giver}{reason}. *{count}* ✨. {emoji}"
   ],
   "partyAnnouncements": [
-    "{user} has reached {count} {currency}. The team is gathering in {channel} to acknowledge this milestone.",
-    "Milestone reached: {user} at {count} {currency}. Please join the recognition in {channel}.",
-    "{user} has achieved {count} {currency}. A group acknowledgment is underway in {channel}.",
-    "Team recognition in progress: {user} has earned {count} {currency}. See {channel} for details."
+    "{user} has recognized {count} {people} with {currency} in {channel}. Well done.\n> {recipients}",
+    "Party recognition: {user} just sparkled {count} {people} in {channel}.\n> {recipients}",
+    "{user} has distributed {count} {currency} across {channel}. A group acknowledgment is underway.\n> {recipients}",
+    "Team recognition in progress: {user} has sparkled {count} {people} in {channel}.\n> {recipients}"
   ]
 }
