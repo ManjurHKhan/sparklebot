@@ -183,7 +183,9 @@ Optional variables:
 | `SPARKLE_PARTY_GIVER_COOLDOWN_S` | `1800` | Seconds between party commands by the same user (30 minutes) |
 | `SPARKLE_RATE_LIMIT` | `10` | Max sparkles per user within the time window |
 | `SPARKLE_RATE_WINDOW_S` | `60` | Seconds in the rate-limit sliding window |
-| `HEALTH_PORT` | `8080` | Port for `/health` readiness probe |
+| `SPARKLE_CMD_LIMIT` | `20` | Max command invocations per user within the command window (all commands, including non-award) |
+| `SPARKLE_CMD_WINDOW_S` | `60` | Seconds in the command-throttle sliding window |
+| `HEALTH_PORT` | `8080` | Port for the `/healthz` liveness probe |
 
 Commands (`.sparkle`, `.sparkles`) are always `.sparkle` and `.sparkles` regardless of currency name.
 
@@ -289,7 +291,7 @@ sparklebot/
   src/
     index.ts              -- Entrypoint: Bolt Socket Mode + dispatcher setup
     config.ts             -- Environment variable loading
-    health.ts             -- /health readiness probe
+    health.ts             -- /healthz liveness probe
     messages.ts           -- Personality pack loader
     store/
       store.ts            -- Store interface
