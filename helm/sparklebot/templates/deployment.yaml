@@ -5,7 +5,14 @@ metadata:
   labels:
     {{- include "sparklebot.labels" . | nindent 4 }}
 spec:
+  {{- if ne (int .Values.replicaCount) 1 }}
+  {{- fail "sparklebot requires exactly 1 replica: SQLite has a single writer and Socket Mode must have a single consumer" }}
+  {{- end }}
   replicas: {{ .Values.replicaCount }}
+  # Recreate, never RollingUpdate: an old and new pod overlapping means two Socket
+  # Mode consumers and two SQLite writers against the same PVC.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "sparklebot.selectorLabels" . | nindent 6 }}
