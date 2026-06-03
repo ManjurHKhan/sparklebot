@@ -278,6 +278,10 @@ npm run typecheck    # TypeScript strict-mode check
 npm run build        # Compile to dist/
 ```
 
+### Contributing / Extending
+
+New command? Read [`docs/extending.md`](docs/extending.md) — it walks through adding one command with a worked `.echo` example, from creation through testing.
+
 ### Project Structure
 
 ```
