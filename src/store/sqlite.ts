@@ -21,6 +21,13 @@ const SCHEMA = `
     last_attempt DATETIME
   );
 
+  CREATE TABLE IF NOT EXISTS processed_messages (
+    channel_id TEXT NOT NULL,
+    ts TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (channel_id, ts)
+  );
+
   CREATE INDEX IF NOT EXISTS idx_sparkles_receiver ON sparkles(receiver_id);
   CREATE INDEX IF NOT EXISTS idx_sparkles_channel ON sparkles(channel_id);
   CREATE INDEX IF NOT EXISTS idx_sparkles_created ON sparkles(created_at);
@@ -62,6 +69,10 @@ export function createSqliteStore(dbPath: string): Store {
     SELECT rank, count FROM ranked WHERE receiver_id = ?
   `);
   const totalReceivedStmt = db.prepare(`SELECT COUNT(*) as count FROM sparkles WHERE receiver_id = ?`);
+  const claimStmt = db.prepare(`INSERT OR IGNORE INTO processed_messages (channel_id, ts) VALUES (?, ?)`);
+  // Redelivery happens within seconds-to-minutes; a day of retention is generous, and
+  // pruning per claim keeps the table bounded without a scheduler (write volume is tiny).
+  const pruneProcessedStmt = db.prepare(`DELETE FROM processed_messages WHERE created_at < datetime('now', '-1 day')`);
   const getSelfStmt = db.prepare(`SELECT attempts FROM self_sparkle_attempts WHERE user_id = ?`);
   const insertSelfStmt = db.prepare(`
     INSERT INTO self_sparkle_attempts (user_id, succeeded, attempts, last_attempt)
@@ -97,6 +108,10 @@ export function createSqliteStore(dbPath: string): Store {
       }
       updateSelfStmt.run(userId);
       return { firstTime: false, attempts: existing.attempts + 1 };
+    },
+    markProcessed(channelId: string, ts: string): boolean {
+      pruneProcessedStmt.run();
+      return claimStmt.run(channelId, ts).changes === 1;
     },
     healthCheck(): boolean {
       try {

@@ -11,6 +11,7 @@ import { createSparkleCommand } from './commands/sparkle.js';
 import { createSparklesCommand } from './commands/sparkles.js';
 import { createHelpCommand } from './commands/help.js';
 import { createHealthServer } from './health.js';
+import { createShutdownHandler } from './shutdown.js';
 
 const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);
 
@@ -29,11 +30,6 @@ if (!config.slackBotToken || !config.slackAppToken) {
 }
 
 const store = createSqliteStore(config.dbPath);
-process.on('SIGTERM', () => {
-  log('SIGTERM received, shutting down...');
-  store.close();
-  process.exit(0);
-});
 
 const app = new App({
   token: config.slackBotToken,
@@ -41,6 +37,17 @@ const app = new App({
   socketMode: true,
   appToken: config.slackAppToken,
 });
+
+// Drain before closing: app.stop() stops new deliveries; the activeCount drain waits
+// for in-flight handlers, so a command never sees the store closed out from under it.
+let inflight = 0;
+const shutdown = createShutdownHandler({
+  app, store, log,
+  exit: (code) => process.exit(code),
+  activeCount: () => inflight,
+});
+process.on('SIGTERM', () => { log('SIGTERM received'); void shutdown(); });
+process.on('SIGINT', () => { log('SIGINT received'); void shutdown(); });
 
 app.error(async (err) => {
   log('[bolt app.error]', err);
@@ -60,6 +67,7 @@ async function main(): Promise<void> {
 
   const resolver = new SlackResolver(app.client as never);
   const rateLimiter = new SlidingWindow(config.rateLimit.limit, config.rateLimit.windowMs);
+  const commandLimiter = new SlidingWindow(config.commandLimit.limit, config.commandLimit.windowMs);
   const messages = createMessages(config.personality);
 
   const registry = new Registry();
@@ -84,13 +92,19 @@ async function main(): Promise<void> {
     resolver,
     store,
     rateLimiter,
+    commandLimiter,
     botUserId,
     client: app.client as never,
     log,
   });
 
   app.message(async ({ message }) => {
-    await dispatch({ message: message as never });
+    inflight++;
+    try {
+      await dispatch({ message: message as never });
+    } finally {
+      inflight--;
+    }
   });
 
   // WS connection state for the health probe (SocketModeClient events).
@@ -98,6 +112,10 @@ async function main(): Promise<void> {
   const smClient = (app as unknown as { receiver?: { client?: NodeJS.EventEmitter } }).receiver?.client;
   smClient?.on('connected', () => { wsConnected = true; log('socket mode connected'); });
   smClient?.on('disconnected', () => { wsConnected = false; log('socket mode disconnected'); });
+  // Transient states count as down: a probe that stays green through a wedged
+  // reconnect loop would never restart the pod.
+  smClient?.on('reconnecting', () => { wsConnected = false; log('socket mode reconnecting'); });
+  smClient?.on('disconnecting', () => { wsConnected = false; log('socket mode disconnecting'); });
 
   createHealthServer({ ws: () => wsConnected, db: () => store.healthCheck() }, config.healthPort);
 

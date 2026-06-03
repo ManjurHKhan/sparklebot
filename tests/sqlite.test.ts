@@ -52,6 +52,16 @@ describe('sqlite store', () => {
     expect(store.recordSelfSparkle('U0FAKE0001')).toEqual({ firstTime: false, attempts: 3 });
   });
 
+  // Codex finding: Slack/Bolt can redeliver the same message (slow ack, reconnect replay).
+  // markProcessed is the idempotency key: first claim wins, duplicates are rejected.
+  it('markProcessed claims a message once and rejects duplicates', () => {
+    expect(store.markProcessed('C0FAKE0001', '1717400000.000100')).toBe(true);
+    expect(store.markProcessed('C0FAKE0001', '1717400000.000100')).toBe(false);
+    // Different ts or channel is a different message.
+    expect(store.markProcessed('C0FAKE0001', '1717400000.000200')).toBe(true);
+    expect(store.markProcessed('C0FAKE0002', '1717400000.000100')).toBe(true);
+  });
+
   it('healthCheck returns true on a live db', () => {
     expect(store.healthCheck()).toBe(true);
   });

@@ -102,6 +102,14 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
   }
 
   async function runParty(ctx: Context): Promise<void> {
+    // Party takes no targets — a trailing mention means the giver expected a targeted
+    // sparkle, not "sparkle whoever posted recently". Reject before any cooldown burns.
+    if (/<@[A-Z0-9]+(?:\|[^>]*)?>/.test(ctx.args)) {
+      await ctx.replyEphemeral(
+        trusted("Party doesn't take targets — it sparkles everyone recently active. Use `.sparkle @user [reason]` for a specific person."),
+      );
+      return;
+    }
     if (!deps.partyChannelCooldown.try(`${ctx.giver.id}:${ctx.channel.id}`)) {
       await ctx.replyEphemeral(trusted('Party cooldown — try this channel again in a few minutes.'));
       return;

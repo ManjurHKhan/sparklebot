@@ -11,6 +11,7 @@ export interface Config {
   partyChannelCooldownMs: number;
   partyGiverCooldownMs: number;
   rateLimit: { limit: number; windowMs: number };
+  commandLimit: { limit: number; windowMs: number };
   healthPort: number;
 }
 
@@ -35,6 +36,12 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     rateLimit: {
       limit: int(env.SPARKLE_RATE_LIMIT, 10),
       windowMs: int(env.SPARKLE_RATE_WINDOW_S, 60) * 1000,
+    },
+    // Invocation throttle (all commands, incl. non-award paths) — looser than the
+    // award budget; it exists to stop channel/DM spam, not scoreboard abuse.
+    commandLimit: {
+      limit: int(env.SPARKLE_CMD_LIMIT, 20),
+      windowMs: int(env.SPARKLE_CMD_WINDOW_S, 60) * 1000,
     },
     healthPort: int(env.HEALTH_PORT, 8080),
   };

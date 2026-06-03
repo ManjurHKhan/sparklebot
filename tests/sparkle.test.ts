@@ -72,6 +72,16 @@ describe('.sparkle disposition', () => {
     expect(h.store.getTotalReceived(BOT)).toBe(0);
   });
 
+  it('mixed bot+self+human in one command: quip + self path + award all fire', async () => {
+    const self: User = { ...GIVER };
+    const h = makeCtx({ mentions: [OWN_BOT, self, BOB], args: 'for everything' });
+    await cmd().run(h.ctx);
+    expect(h.replies).toHaveLength(3); // quip, first-self celebration, bob award
+    expect(h.store.getTotalReceived(BOT)).toBe(0); // bot never gets a ledger row
+    expect(h.store.getTotalReceived(GIVER.id)).toBe(1); // one-time self gag row
+    expect(h.store.getTotalReceived(BOB.id)).toBe(1); // real award
+  });
+
   it('self target: first time records + celebrates, then shames in channel, then goes ephemeral past cap', async () => {
     const self: User = { ...GIVER };
     const c = cmd();
@@ -100,6 +110,29 @@ describe('.sparkle party', () => {
     });
     return h;
   }
+
+  // Codex finding: `.sparkle party @alice` silently ignored the mention and sparkled
+  // recent posters instead — surprising side effects. Party takes no targets; trailing
+  // args with a mention must be rejected with a named reason, before any cooldown burns.
+  it('rejects trailing mentions after party without burning cooldowns', async () => {
+    const h = makeCtx({
+      args: 'party <@U0FAKE0002>',
+      resolver: {
+        resolveUser: async (id) => ({ id, name: `name-${id}`, isBot: false }),
+        channelName: async () => 'general',
+        recentHumanUserIds: async () => ['U0FAKE0003'],
+      },
+    });
+    const c = cmd(); // same instance across both runs so cooldown state carries over
+    await c.run(h.ctx);
+    expect(h.store.getLeaderboard(10)).toHaveLength(0);
+    expect(h.ephemerals).toHaveLength(1);
+    expect(h.ephemerals[0]).toContain("doesn't take targets");
+    // Cooldowns untouched: an immediate valid party from the same giver+channel still works.
+    const h2 = partyHarness(['U0FAKE0003']);
+    await c.run(h2.ctx);
+    expect(h2.store.getTotalReceived('U0FAKE0003')).toBe(1);
+  });
 
   it('awards everyone active, atomically, and announces once', async () => {
     const h = partyHarness(['U0FAKE0002', 'U0FAKE0003']);

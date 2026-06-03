@@ -26,7 +26,14 @@ export interface DispatcherDeps {
   registry: Registry;
   resolver: ResolverApi;
   store: Store;
+  /** Award budget: charges awardable targets only. */
   rateLimiter: SlidingWindow;
+  /**
+   * Invocation throttle: charges EVERY recognized command run, per user. Catches spam
+   * surfaces the award budget never sees (own-bot quips, .sparkles DM opens) and covers
+   * future commands whose authors forget ctx.rate.
+   */
+  commandLimiter: SlidingWindow;
   botUserId: string;
   client: SlackPostClient;
   log: (...args: unknown[]) => void;
@@ -45,7 +52,7 @@ interface IncomingMessage {
 }
 
 export function createDispatcher(deps: DispatcherDeps) {
-  const { registry, resolver, store, rateLimiter, botUserId, client, log } = deps;
+  const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log } = deps;
 
   return async function dispatch({ message }: { message: IncomingMessage }): Promise<void> {
     // 1. Eligibility: human-authored channel message with text.
@@ -60,6 +67,24 @@ export function createDispatcher(deps: DispatcherDeps) {
     const command = registry.lookup(tokenMatch[1]!.toLowerCase());
     if (!command) return;
     const rawArgs = message.text.slice(tokenMatch[0].length).trim();
+
+    // Idempotency: Bolt redelivers a message on slow ack or Socket Mode reconnect, and a
+    // rollout overlap could briefly run two consumers against the same PVC. Claim the
+    // message (channel+ts) before any side effect; a duplicate is silently dropped.
+    if (!store.markProcessed(message.channel, message.ts)) return;
+
+    // Invocation throttle — before any Slack/API work so a spammer can't burn quota.
+    // The ephemeral on trip is deliberately outside the charge (visible only to them).
+    if (!commandLimiter.tryConsume(message.user, 1)) {
+      try {
+        await withRetry(() =>
+          client.chat.postEphemeral({ channel: message.channel, user: message.user!, text: 'Slow down — too many commands in a short window.' }),
+        );
+      } catch (err) {
+        log('postEphemeral failed', err);
+      }
+      return;
+    }
 
     // Last line of defense at the output boundary: reject anything that isn't a real SafeText
     // instance (typos, casts, forged literals). Throws at runtime in every environment.

@@ -22,6 +22,12 @@ export interface Store {
   getTotalReceived(userId: string): number;
   isFirstSparkle(receiverId: string): boolean;
   recordSelfSparkle(userId: string): { firstTime: boolean; attempts: number };
+  /**
+   * Idempotency claim for an incoming Slack message (channel + ts uniquely identify it).
+   * Returns true if this call claimed the message, false if it was already processed —
+   * guards against Bolt redelivery (slow ack, Socket Mode reconnect replay).
+   */
+  markProcessed(channelId: string, ts: string): boolean;
   /** SELECT 1 — used by the health probe. */
   healthCheck(): boolean;
   close(): void;

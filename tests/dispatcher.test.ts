@@ -12,11 +12,13 @@ const GIVER = { id: 'U0FAKE0001', name: 'alice' };
 const TARGET = { id: 'U0FAKE0002', name: 'bob' };
 
 
-function harness(commandOverrides: Partial<Command> = {}) {
+function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?: number } = {}) {
   const fake = makeFakeSlack({
     users: [
       GIVER, TARGET,
       { id: 'U0FAKE0003', name: 'carol' },
+      // Filler humans so boundary tests can hit MAX_TARGETS exactly.
+      ...Array.from({ length: 8 }, (_, i) => ({ id: `U0FAKE001${i + 1}`, name: `filler${i + 1}` })),
       { id: 'B0FAKEBOT1', name: 'otherbot', is_bot: true },
       { id: 'U0FAKEAPP1', name: 'cadence', is_app_user: true },
       { id: 'U0FAKEDEAD', name: 'ghost', deleted: true },
@@ -44,12 +46,16 @@ function harness(commandOverrides: Partial<Command> = {}) {
     resolver: new SlackResolver(fake.client as never),
     store,
     rateLimiter: new SlidingWindow(10, 60_000, () => 0),
+    commandLimiter: new SlidingWindow(opts.commandLimit ?? 20, 60_000, () => 0),
     botUserId: BOT,
     client: fake.client as never,
     log: () => {},
   });
-  const msg = function(text: string, user?: string) {
-    const m: any = { type: 'message', text, channel: 'C0FAKE0001', ts: '1.1' };
+  // Each call gets a unique ts (like real Slack messages); pass an explicit ts to
+  // simulate a redelivery of the same message.
+  let tsCounter = 0;
+  const msg = function(text: string, user?: string, ts?: string) {
+    const m: any = { type: 'message', text, channel: 'C0FAKE0001', ts: ts ?? `1.${++tsCounter}` };
     if (arguments.length === 1) {
       m.user = GIVER.id;
     } else if (user !== undefined) {
@@ -59,7 +65,7 @@ function harness(commandOverrides: Partial<Command> = {}) {
     if (process.env.DEBUG_DISPATCHER) console.log('HARNESS: msg() created message:', JSON.stringify(m));
     return dispatch({ message: m });
   };
-  return { fake, runs, msg, store };
+  return { fake, runs, msg, store, dispatch };
 }
 
 describe('dispatcher routing', () => {
@@ -83,13 +89,6 @@ describe('dispatcher routing', () => {
 
   it('ignores bot-authored messages (subtype/bot_id)', async () => {
     const h = harness();
-    const origDispatch = h.fake.client.chat.postEphemeral;
-    let msgReceived: any;
-    h.fake.client.chat.postEphemeral = async (...args: any[]) => {
-      // Intercept to see what's happening
-      return origDispatch(...args);
-    };
-    // Also patch the dispatcher directly to log
     await h.msg('.sparkle <@U0FAKE0002>', undefined as never); // no user field
     expect(h.runs).toHaveLength(0);
   });
@@ -106,6 +105,92 @@ describe('dispatcher routing', () => {
     expect(h.runs).toHaveLength(1);
     expect(h.runs[0]!.mentions).toEqual([]);
     expect(h.runs[0]!.args).toBe('party');
+  });
+
+  // Codex finding: Bolt redelivers a message when the ack is slow or Socket Mode
+  // reconnects mid-delivery. The same channel+ts must never run a command twice.
+  it('runs a redelivered message (same channel+ts) only once', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002> great work', GIVER.id, '1717400000.000100');
+    await h.msg('.sparkle <@U0FAKE0002> great work', GIVER.id, '1717400000.000100');
+    expect(h.runs).toHaveLength(1);
+  });
+
+  it('accepts exactly MAX_TARGETS (10) mentions', async () => {
+    const h = harness();
+    const ten = ['U0FAKE0002', 'U0FAKE0003', ...Array.from({ length: 8 }, (_, i) => `U0FAKE001${i + 1}`)];
+    await h.msg(`.sparkle ${ten.map((id) => `<@${id}>`).join(' ')} team effort`);
+    expect(h.runs).toHaveLength(1);
+    expect(h.runs[0]!.mentions).toHaveLength(10);
+  });
+
+  it('accepts a reason of exactly 256 chars and rejects 257', async () => {
+    const h = harness();
+    await h.msg(`.sparkle <@U0FAKE0002> ${'a'.repeat(256)}`);
+    expect(h.runs).toHaveLength(1);
+    await h.msg(`.sparkle <@U0FAKE0002> ${'a'.repeat(257)}`);
+    expect(h.runs).toHaveLength(1); // second did not run
+    expect(h.fake.ephemerals.at(-1)!.text).toContain('Reason too long');
+  });
+
+  it('unresolvable target mid-list: command never runs, no partial awards', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002> <@U0FAKE9999> <@U0FAKE0003> thanks all');
+    expect(h.runs).toHaveLength(0);
+    expect(h.fake.ephemerals).toHaveLength(1);
+    expect(h.fake.ephemerals[0]!.text).toContain("Couldn't resolve");
+  });
+
+  it('rejects a huge non-mention token quickly without hanging', async () => {
+    const h = harness();
+    const start = Date.now();
+    await h.msg(`.sparkle ${'x'.repeat(5000)}`);
+    expect(Date.now() - start).toBeLessThan(1000);
+    expect(h.runs).toHaveLength(0);
+    expect(h.fake.ephemerals[0]!.text).toContain('real @-mention');
+  });
+
+  it('ignores thread_broadcast and message_changed subtypes', async () => {
+    const h = harness();
+    for (const subtype of ['thread_broadcast', 'message_changed']) {
+      await h.dispatch({
+        message: {
+          type: 'message', subtype, text: '.sparkle <@U0FAKE0002> edited in',
+          user: GIVER.id, channel: 'C0FAKE0001', ts: `9.${subtype.length}`,
+        } as never,
+      });
+    }
+    expect(h.runs).toHaveLength(0);
+    expect(h.fake.posts).toHaveLength(0);
+  });
+
+  it('claims the message before validation: redelivered invalid message replies once', async () => {
+    const h = harness();
+    // Bot giver fails the human gate, but the redelivery is dropped at the dedup
+    // claim — only one "Only humans" ephemeral ever goes out.
+    await h.msg('.sparkle <@U0FAKE0002> nice', 'B0FAKEBOT1', '1717400000.000300');
+    await h.msg('.sparkle <@U0FAKE0002> nice', 'B0FAKEBOT1', '1717400000.000300');
+    expect(h.fake.ephemerals).toHaveLength(1);
+  });
+
+  // Codex finding: own-bot quips and non-award commands (.sparkles DM spam) had no
+  // throttle — award budget only charges awardable targets. A second, framework-level
+  // limiter charges EVERY recognized command invocation, so future commands are
+  // covered without their authors remembering ctx.rate.
+  it('throttles total command invocations per user, separate from award budget', async () => {
+    const h = harness({}, { commandLimit: 3 });
+    for (let i = 0; i < 3; i++) await h.msg(`.sparkle <@${BOT}> nice bot`); // uncharged quips
+    expect(h.runs).toHaveLength(3);
+    await h.msg(`.sparkle <@${BOT}> nice bot`); // 4th invocation
+    expect(h.runs).toHaveLength(3); // throttled before run
+    expect(h.fake.ephemerals.at(-1)!.text).toMatch(/slow down/i);
+  });
+
+  it('command throttle is per-user', async () => {
+    const h = harness({}, { commandLimit: 1 });
+    await h.msg('.sparkle <@U0FAKE0002> one');
+    await h.msg('.sparkle <@U0FAKE0003> two', 'U0FAKE0002'); // different giver, own budget
+    expect(h.runs).toHaveLength(2);
   });
 
   it('`.{cmd} help` replies the command help ephemerally without running it', async () => {
