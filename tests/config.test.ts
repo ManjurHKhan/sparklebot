@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-// .ts specifier: legacy src/config.js coexists until legacy removal and vitest
-// would resolve a .js specifier to it.
-import { loadConfig } from '../src/config.ts';
+import { loadConfig } from '../src/config.js';
 
 describe('loadConfig', () => {
   it('applies defaults', () => {

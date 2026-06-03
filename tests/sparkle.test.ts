@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createSparkleCommand } from '../src/commands/sparkle.js';
 import { tierEmoji } from '../src/commands/sparkle.js';
-// .ts specifier: legacy src/messages.js coexists until legacy removal and vitest
-// would resolve a .js specifier to it.
-import { createMessages } from '../src/messages.ts';
+import { createMessages } from '../src/messages.js';
 import { Cooldown } from '../src/framework/rate-limit.js';
 import { makeCtx, GIVER, BOT } from './helpers/ctx.js';
 import type { User } from '../src/framework/types.js';

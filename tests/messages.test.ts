@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-// .ts specifier: the legacy src/messages.js coexists until the legacy-removal task,
-// and vitest would otherwise resolve the .js specifier to that file.
-import { createMessages } from '../src/messages.ts';
+import { createMessages } from '../src/messages.js';
 import { fmt, isSafe } from '../src/framework/safe.js';
 
 describe('createMessages', () => {
