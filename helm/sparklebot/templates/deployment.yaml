@@ -43,11 +43,22 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.slack.existingSecret }}
                   key: {{ .Values.slack.appTokenKey }}
+          ports:
+            - name: health
+              containerPort: 8080
           livenessProbe:
-            exec:
-              command: ["node", "-e", "process.exit(0)"]
+            httpGet:
+              path: /healthz
+              port: health
             initialDelaySeconds: 10
-            periodSeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.persistence.enabled }}

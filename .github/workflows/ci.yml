@@ -19,7 +19,13 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run typecheck
+
+      - run: npm run build
+
       - run: npm test
+
+      - run: npm audit --omit=dev --audit-level=high
 
   docker:
     runs-on: ubuntu-latest
@@ -32,9 +38,9 @@ jobs:
 
       - name: Verify image structure
         run: |
-          docker run --rm --entrypoint node sparklebot:ci -e "
+          docker run --rm --entrypoint /nodejs/bin/node sparklebot:ci -e "
             const fs = require('fs');
-            const required = ['src/app.js', 'src/config.js', 'src/db.js', 'src/messages.js', 'src/handlers/sparkle.js', 'src/handlers/leaderboard.js'];
+            const required = ['dist/index.js', 'dist/framework/dispatcher.js', 'dist/commands/sparkle.js', 'dist/personalities/playful.json'];
             const missing = required.filter(f => !fs.existsSync(f));
             if (missing.length) { console.error('Missing files:', missing); process.exit(1); }
             console.log('All required files present');
