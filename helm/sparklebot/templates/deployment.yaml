@@ -14,6 +14,8 @@ spec:
       labels:
         {{- include "sparklebot.selectorLabels" . | nindent 8 }}
     spec:
+      # The bot talks only to Slack; it never needs the Kubernetes API.
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
