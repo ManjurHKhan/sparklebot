@@ -180,7 +180,7 @@ This is useful for mode-switching commands where the first token is a verb, not 
 
 Your command's logic. You receive a fully-populated `Context` with:
 - Resolved, deduplicated targets in `ctx.mentions` (if `takesTargets() => true`)
-- Escaped, capped `ctx.args`
+- Length-capped (≤256) but RAW `ctx.args` — escape it yourself at output time via `fmt` interpolation
 - Rate-limit token in `ctx.rate`
 - Database access via `ctx.store`
 - Everything you need to operate
@@ -192,7 +192,7 @@ Every `run()` method receives a `Context` (from `src/framework/types.ts`):
 ```typescript
 interface Context {
   command: string;                          // e.g., "sparkle"
-  args: string;                             // Remaining text, escaped
+  args: string;                             // Remaining text — raw user input, capped at 256; escape via fmt at output
   mentions: User[];                         // Resolved targets (dedup, live humans only)
   giver: User;                              // Human who issued the command
   channel: { id: string; name: string };   // Channel metadata

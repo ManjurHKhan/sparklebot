@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createMessages } from '../src/messages.js';
 import { fmt, isSafe } from '../src/framework/safe.js';
 
@@ -11,7 +11,14 @@ describe('createMessages', () => {
     expect(out.text).toContain('*alice*');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('escapes raw-string vars', () => {
+    // Pin template selection: one botSparkleQuips template has no {giver} slot,
+    // which would make this assertion flake under random selection.
+    vi.spyOn(Math, 'random').mockReturnValue(0);
     const out = m.botSparkleQuip({ giver: '<!here>', user: 'x', currency: 'sparkle' });
     expect(out.text).not.toContain('<!here>');
     expect(out.text).toContain('&lt;!here&gt;');
