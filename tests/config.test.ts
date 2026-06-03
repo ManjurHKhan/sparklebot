@@ -27,4 +27,17 @@ describe('loadConfig', () => {
     expect(loadConfig({ SPARKLE_PARTY_MAX_RECIPIENTS: '50' }).partyMaxRecipients).toBe(10);
     expect(loadConfig({ SPARKLE_PARTY_MAX_RECIPIENTS: '3' }).partyMaxRecipients).toBe(3);
   });
+
+  it('falls back to defaults for zero, negative, and non-numeric values', () => {
+    const c = loadConfig({
+      SPARKLE_RATE_LIMIT: '0',       // zero would disable awarding entirely
+      HEALTH_PORT: '-5',             // negative port is unbindable
+      SPARKLE_PARTY_MINUTES: 'abc',  // NaN
+      SPARKLE_PARTY_MAX_RECIPIENTS: 'notanumber',
+    });
+    expect(c.rateLimit.limit).toBe(10);
+    expect(c.healthPort).toBe(8080);
+    expect(c.partyMinutes).toBe(30);
+    expect(c.partyMaxRecipients).toBe(10);
+  });
 });

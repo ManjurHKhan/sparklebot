@@ -22,6 +22,11 @@ describe('escapeText', () => {
     const out = escapeText('a'.repeat(500));
     expect(out.length).toBeLessThanOrEqual(257); // 256 + ellipsis
   });
+
+  it('truncation boundary is exact: 256 passes untouched, 257 truncates to 256+ellipsis', () => {
+    expect(escapeText('a'.repeat(256))).toBe('a'.repeat(256));
+    expect(escapeText('a'.repeat(257))).toBe(`${'a'.repeat(256)}…`);
+  });
 });
 
 describe('fmt / SafeText', () => {
