@@ -5,7 +5,14 @@ metadata:
   labels:
     {{- include "sparklebot.labels" . | nindent 4 }}
 spec:
+  {{- if ne (int .Values.replicaCount) 1 }}
+  {{- fail "sparklebot requires exactly 1 replica: SQLite has a single writer and Socket Mode must have a single consumer" }}
+  {{- end }}
   replicas: {{ .Values.replicaCount }}
+  # Recreate, never RollingUpdate: an old and new pod overlapping means two Socket
+  # Mode consumers and two SQLite writers against the same PVC.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "sparklebot.selectorLabels" . | nindent 6 }}
@@ -14,6 +21,8 @@ spec:
       labels:
         {{- include "sparklebot.selectorLabels" . | nindent 8 }}
     spec:
+      # The bot talks only to Slack; it never needs the Kubernetes API.
+      automountServiceAccountToken: false
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -43,11 +52,22 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.slack.existingSecret }}
                   key: {{ .Values.slack.appTokenKey }}
+          ports:
+            - name: health
+              containerPort: 8080
           livenessProbe:
-            exec:
-              command: ["node", "-e", "process.exit(0)"]
+            httpGet:
+              path: /healthz
+              port: health
             initialDelaySeconds: 10
-            periodSeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.persistence.enabled }}

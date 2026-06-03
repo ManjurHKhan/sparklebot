@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/manjurhkhan/sparklebot
-  tag: ""  # defaults to chart appVersion
+  tag: "1.1.0"
   pullPolicy: IfNotPresent
 
 persistence:
@@ -22,17 +22,32 @@ slack:
 sparkle:
   currency: sparkle
   currencyPlural: sparkles
-  emoji: ""
   personality: playful
   partyMinutes: 30
+  # Award budget: max awarded sparkles per giver per window.
+  rateLimit: 10
+  rateWindowSeconds: 60
+  # Invocation throttle: max command runs per user per window (all commands).
+  commandLimit: 20
+  commandWindowSeconds: 60
 
 podSecurityContext:
   runAsNonRoot: true
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  fsGroupChangePolicy: "OnRootMismatch"
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
+  # Safe with SQLite/WAL because the db (+ -wal/-shm journals) lives on the
+  # read-write PVC at /app/data — nothing writes the image filesystem.
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  capabilities:
+    drop: ["ALL"]
 
 resources:
   requests:

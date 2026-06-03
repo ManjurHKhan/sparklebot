@@ -1,14 +1,16 @@
 {
   "name": "sparklebot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "A lightweight Slack bot for peer recognition. Give your teammates sparkles for being awesome.",
-  "main": "src/app.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node --env-file=.env src/app.js",
-    "dev": "node --env-file=.env --watch src/app.js",
+    "build": "tsc && cp -R src/personalities dist/personalities",
+    "start": "node --env-file=.env dist/index.js",
+    "dev": "npm run build && node --env-file=.env dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "keywords": [
     "slack",
@@ -18,10 +20,13 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@slack/bolt": "^4.1.0",
-    "better-sqlite3": "^12.6.2"
+    "@slack/bolt": "^4.7.3",
+    "better-sqlite3": "^12.10.0"
   },
   "devDependencies": {
-    "vitest": "^3.1.1"
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.12.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }

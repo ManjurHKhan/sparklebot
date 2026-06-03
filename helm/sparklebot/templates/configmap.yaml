@@ -7,6 +7,9 @@ metadata:
 data:
   SPARKLE_CURRENCY: {{ .Values.sparkle.currency | quote }}
   SPARKLE_CURRENCY_PLURAL: {{ .Values.sparkle.currencyPlural | quote }}
-  SPARKLE_EMOJI: {{ .Values.sparkle.emoji | quote }}
   SPARKLE_PERSONALITY: {{ .Values.sparkle.personality | quote }}
   SPARKLE_PARTY_MINUTES: {{ .Values.sparkle.partyMinutes | quote }}
+  SPARKLE_RATE_LIMIT: {{ .Values.sparkle.rateLimit | quote }}
+  SPARKLE_RATE_WINDOW_S: {{ .Values.sparkle.rateWindowSeconds | quote }}
+  SPARKLE_CMD_LIMIT: {{ .Values.sparkle.commandLimit | quote }}
+  SPARKLE_CMD_WINDOW_S: {{ .Values.sparkle.commandWindowSeconds | quote }}
