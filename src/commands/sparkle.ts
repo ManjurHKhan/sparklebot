@@ -102,8 +102,62 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
   }
 
   async function runParty(ctx: Context): Promise<void> {
-    // Implemented in the next change.
-    await ctx.replyEphemeral(trusted('party is not available yet.'));
+    if (!deps.partyChannelCooldown.try(`${ctx.giver.id}:${ctx.channel.id}`)) {
+      await ctx.replyEphemeral(trusted('Party cooldown — try this channel again in a few minutes.'));
+      return;
+    }
+    if (!deps.partyGiverCooldown.try(ctx.giver.id)) {
+      await ctx.replyEphemeral(trusted('Cross-channel party cooldown — one party spree at a time.'));
+      return;
+    }
+
+    const activeIds = (
+      await ctx.resolver.recentHumanUserIds(ctx.channel.id, config.partyMinutes, ctx.giver.id)
+    ).slice(0, config.partyMaxRecipients);
+
+    if (activeIds.length === 0) {
+      await ctx.reply(
+        fmt`No one to party with! No one else has posted in the last ${config.partyMinutes} minutes.`,
+      );
+      return;
+    }
+
+    if (!ctx.rate.tryConsume(activeIds.length)) {
+      await ctx.replyEphemeral(trusted('Rate limit hit — that party would exceed your sparkle budget.'));
+      return;
+    }
+
+    const recipients: User[] = [];
+    for (const id of activeIds) {
+      const u = await ctx.resolver.resolveUser(id);
+      if (u && !u.isBot) recipients.push(u);
+    }
+
+    ctx.store.insertSparkles(
+      recipients.map((r) => ({
+        giverId: ctx.giver.id, giverName: ctx.giver.name,
+        receiverId: r.id, receiverName: r.name,
+        reason: 'party',
+        channelId: ctx.channel.id, channelName: ctx.channel.name,
+      })),
+    );
+
+    const lines = recipients.map((r) => {
+      const total = ctx.store.getTotalReceived(r.id);
+      return fmt`${trusted(tierEmoji(total))} *${r.name}* now has *${total}* ✨`;
+    });
+    const people = recipients.length === 1 ? 'person' : 'people';
+    const currency = recipients.length === 1 ? config.currency : config.currencyPlural;
+    await ctx.reply(
+      messages.partyAnnouncement({
+        user: fmt`*${ctx.giver.name}*`,
+        count: recipients.length,
+        channel: trusted(`<#${ctx.channel.id}>`),
+        currency,
+        recipients: joinSafe(lines, '\n> '),
+        people,
+      }),
+    );
   }
 
   return {

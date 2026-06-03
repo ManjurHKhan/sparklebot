@@ -88,3 +88,82 @@ describe('.sparkle disposition', () => {
     expect(h.ephemerals).toHaveLength(1);
   });
 });
+
+describe('.sparkle party', () => {
+  function partyHarness(activeIds: string[], rateOk = true) {
+    const h = makeCtx({
+      args: 'party',
+      resolver: {
+        resolveUser: async (id) => ({ id, name: `name-${id}`, isBot: false }),
+        channelName: async () => 'general',
+        recentHumanUserIds: async () => activeIds,
+      },
+      rate: { tryConsume: () => rateOk },
+    });
+    return h;
+  }
+
+  it('awards everyone active, atomically, and announces once', async () => {
+    const h = partyHarness(['U0FAKE0002', 'U0FAKE0003']);
+    await cmd().run(h.ctx);
+    expect(h.store.getTotalReceived('U0FAKE0002')).toBe(1);
+    expect(h.store.getTotalReceived('U0FAKE0003')).toBe(1);
+    expect(h.replies).toHaveLength(1);
+  });
+
+  it('caps recipients at 10', async () => {
+    const ids = Array.from({ length: 15 }, (_, i) => `U0FAKE${String(100 + i)}`);
+    const h = partyHarness(ids);
+    await cmd().run(h.ctx);
+    const total = ids.reduce((acc, id) => acc + h.store.getTotalReceived(id), 0);
+    expect(total).toBe(10);
+  });
+
+  it('rejects when the rate window cannot cover the recipients', async () => {
+    const h = partyHarness(['U0FAKE0002'], false);
+    await cmd().run(h.ctx);
+    expect(h.store.getTotalReceived('U0FAKE0002')).toBe(0);
+    expect(h.ephemerals).toHaveLength(1);
+  });
+
+  it('enforces per-channel and cross-channel cooldowns', async () => {
+    let t = 0;
+    const c = createSparkleCommand({
+      messages: createMessages('playful'),
+      config: { currency: 'sparkle', currencyPlural: 'sparkles', partyMinutes: 30, partyMaxRecipients: 10 },
+      partyChannelCooldown: new Cooldown(300_000, () => t),
+      partyGiverCooldown: new Cooldown(1_800_000, () => t),
+    });
+    const h1 = partyHarness(['U0FAKE0002']);
+    await c.run(h1.ctx);
+    expect(h1.replies).toHaveLength(1);
+
+    // Same channel, 4 min later → blocked by channel cooldown.
+    t = 240_000;
+    const h2 = partyHarness(['U0FAKE0002']);
+    await c.run(h2.ctx);
+    expect(h2.ephemerals).toHaveLength(1);
+    expect(h2.replies).toHaveLength(0);
+
+    // Different channel, 10 min later → still blocked by cross-channel giver cooldown.
+    t = 600_000;
+    const h3 = partyHarness(['U0FAKE0002']);
+    h3.ctx.channel.id = 'C0FAKE0002';
+    await c.run(h3.ctx);
+    expect(h3.ephemerals).toHaveLength(1);
+
+    // 31 min later → allowed again.
+    t = 1_860_000;
+    const h4 = partyHarness(['U0FAKE0002']);
+    h4.ctx.channel.id = 'C0FAKE0002';
+    await c.run(h4.ctx);
+    expect(h4.replies).toHaveLength(1);
+  });
+
+  it('replies when no one is active', async () => {
+    const h = partyHarness([]);
+    await cmd().run(h.ctx);
+    expect(h.replies[0]).toMatch(/no one/i);
+    expect(h.store.getLeaderboard(10)).toHaveLength(0);
+  });
+});
