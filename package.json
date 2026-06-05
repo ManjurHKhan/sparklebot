@@ -1,6 +1,6 @@
 {
   "name": "sparklebot",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "description": "A lightweight Slack bot for peer recognition. Give your teammates sparkles for being awesome.",
   "main": "dist/index.js",
