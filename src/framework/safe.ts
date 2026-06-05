@@ -79,7 +79,7 @@ export function isSafe(v: unknown): v is SafeText {
  * - NFKC normalize (homograph collapse)
  * - strip control, zero-width, and bidi override chars from user input
  * - length cap
- * - entity-escape & < >  (kills <@mentions>, <!here>, <!channel>, <!subteam^…>, links)
+ * - entity-escape & < >  (kills <@mentions>, <!here>, <!channel>, <!subteam^…>)
  * - render URL-like text as inline code after Slack/Unicode normalization
  * - strip user backticks, then neutralize mrkdwn pair chars * _ ~ with a trailing ZWSP
  */
