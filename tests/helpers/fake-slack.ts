@@ -16,6 +16,8 @@ interface PostedMessage {
   unfurl_media?: false;
 }
 
+type EphemeralMessage = PostedMessage & { user: string };
+
 export function makeFakeSlack(opts: {
   users?: FakeUser[];
   channels?: Record<string, string>; // id -> name
@@ -24,7 +26,7 @@ export function makeFakeSlack(opts: {
 } = {}) {
   const users = new Map((opts.users ?? []).map((u) => [u.id, u]));
   const posts: PostedMessage[] = [];
-  const ephemerals: Array<{ channel: string; user: string; text: string }> = [];
+  const ephemerals: EphemeralMessage[] = [];
   const reactions: Array<{ channel: string; timestamp: string; name: string }> = [];
 
   const client = {
@@ -63,7 +65,7 @@ export function makeFakeSlack(opts: {
         posts.push(args);
         return { ok: true };
       }),
-      postEphemeral: vi.fn(async (args: { channel: string; user: string; text: string }) => {
+      postEphemeral: vi.fn(async (args: EphemeralMessage) => {
         ephemerals.push(args);
         return { ok: true };
       }),
