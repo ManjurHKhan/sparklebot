@@ -8,6 +8,14 @@ export interface FakeUser {
   is_app_user?: boolean;
 }
 
+interface PostedMessage {
+  channel: string;
+  text: string;
+  parse?: 'none';
+  unfurl_links?: false;
+  unfurl_media?: false;
+}
+
 export function makeFakeSlack(opts: {
   users?: FakeUser[];
   channels?: Record<string, string>; // id -> name
@@ -15,7 +23,7 @@ export function makeFakeSlack(opts: {
   botUserId?: string;
 } = {}) {
   const users = new Map((opts.users ?? []).map((u) => [u.id, u]));
-  const posts: Array<{ channel: string; text: string }> = [];
+  const posts: PostedMessage[] = [];
   const ephemerals: Array<{ channel: string; user: string; text: string }> = [];
   const reactions: Array<{ channel: string; timestamp: string; name: string }> = [];
 
@@ -51,7 +59,7 @@ export function makeFakeSlack(opts: {
       })),
     },
     chat: {
-      postMessage: vi.fn(async (args: { channel: string; text: string }) => {
+      postMessage: vi.fn(async (args: PostedMessage) => {
         posts.push(args);
         return { ok: true };
       }),

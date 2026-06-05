@@ -15,7 +15,13 @@ const MAX_REASON = 256;
 /** Minimal posting slice of WebClient the dispatcher owns. Plugins never see it. */
 export interface SlackPostClient {
   chat: {
-    postMessage(args: { channel: string; text: string }): Promise<unknown>;
+    postMessage(args: {
+      channel: string;
+      text: string;
+      parse?: 'none';
+      unfurl_links?: false;
+      unfurl_media?: false;
+    }): Promise<unknown>;
     postEphemeral(args: { channel: string; user: string; text: string }): Promise<unknown>;
   };
   conversations: { open(args: { users: string }): Promise<any> };
@@ -205,14 +211,30 @@ export function createDispatcher(deps: DispatcherDeps) {
         botUserId,
         reply: async (msg) => {
           assertSafe(msg);
-          await withRetry(() => client.chat.postMessage({ channel: message.channel, text: msg.text }));
+          await withRetry(() =>
+            client.chat.postMessage({
+              channel: message.channel,
+              text: msg.text,
+              parse: 'none',
+              unfurl_links: false,
+              unfurl_media: false,
+            }),
+          );
         },
         replyEphemeral: ephemeral,
         replyDM: async (msg) => {
           assertSafe(msg);
           try {
             const dm = await withRetry(() => client.conversations.open({ users: giver.id }));
-            await withRetry(() => client.chat.postMessage({ channel: dm.channel.id, text: msg.text }));
+            await withRetry(() =>
+              client.chat.postMessage({
+                channel: dm.channel.id,
+                text: msg.text,
+                parse: 'none',
+                unfurl_links: false,
+                unfurl_media: false,
+              }),
+            );
           } catch {
             await ephemeral(msg); // closed-DM fallback — never fail silently
           }

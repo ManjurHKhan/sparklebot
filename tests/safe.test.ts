@@ -18,6 +18,20 @@ describe('escapeText', () => {
     expect(escapeText('Ａdmin')).toBe('Admin'); // fullwidth A collapses
   });
 
+  it('breaks URLs after NFKC normalization so Slack cannot autolink them', () => {
+    expect(escapeText('ｈｔｔｐｓ：／／google．ｃｏｍ')).toBe('`https://google.com`');
+    expect(escapeText('https://evil.example/path')).toBe('`https://evil.example/path`');
+    expect(escapeText('www.evil.example')).toBe('`www.evil.example`');
+  });
+
+  it('strips Slack link wrappers and labels before rendering links as code', () => {
+    expect(escapeText('＜ｈｔｔｐｓ：／／google．ｃｏｍ|Claim Your Sparkles Here!＞')).toBe('`https://google.com`');
+  });
+
+  it('strips unsafe invisible/control characters from user input', () => {
+    expect(escapeText('pay\u202Ecod.exe\u200B')).toBe('`paycod.exe`');
+  });
+
   it('caps field length at 256 by default', () => {
     const out = escapeText('a'.repeat(500));
     expect(out.length).toBeLessThanOrEqual(257); // 256 + ellipsis

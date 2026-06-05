@@ -1,6 +1,37 @@
 const ZWSP = '​';
 export const MAX_FIELD_LEN = 256;
 export const MAX_MESSAGE_LEN = 3000;
+const UNSAFE_INVISIBLE_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g;
+const SLACK_LINK_RE = /<\s*((?:(?:https?|ftp):\/\/|www\.)[^\s<>()`|]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s<>()`|]+)?)(?:\|[^>]*)?\s*>/gi;
+const LINK_RE = /\b((?:(?:https?|ftp):\/\/|www\.)[^\s<>()`|]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s<>()`|]+)?)/gi;
+const TRAILING_LINK_PUNCT_RE = /[.,!?;:]+$/;
+
+function escapeSlackControls(s: string): string {
+  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
+function escapeNonLinkText(s: string): string {
+  return escapeSlackControls(s).replace(/([*_~`])/g, `$1${ZWSP}`);
+}
+
+function codeLink(raw: string): string {
+  const trailing = raw.match(TRAILING_LINK_PUNCT_RE)?.[0] ?? '';
+  const link = trailing ? raw.slice(0, -trailing.length) : raw;
+  return `\`${escapeSlackControls(link)}\`${escapeNonLinkText(trailing)}`;
+}
+
+function renderLinksAsCode(s: string): string {
+  let out = '';
+  let last = 0;
+  for (const match of s.matchAll(LINK_RE)) {
+    const index = match.index ?? 0;
+    out += escapeNonLinkText(s.slice(last, index));
+    out += codeLink(match[0]);
+    last = index + match[0].length;
+  }
+  out += escapeNonLinkText(s.slice(last));
+  return out;
+}
 
 /**
  * Runtime-verified safe string. Only Context output methods accept it.
@@ -31,16 +62,17 @@ export function isSafe(v: unknown): v is SafeText {
 /**
  * Escape user-derived text for Slack mrkdwn output.
  * - NFKC normalize (homograph collapse)
+ * - strip control, zero-width, and bidi override chars from user input
  * - length cap
  * - entity-escape & < >  (kills <@mentions>, <!here>, <!channel>, <!subteam^…>, links)
+ * - render URL-like text as inline code after Slack/Unicode normalization
  * - neutralize mrkdwn pair chars * _ ~ ` with a trailing ZWSP
  */
 export function escapeText(input: string, maxLen: number = MAX_FIELD_LEN): string {
-  let s = input.normalize('NFKC');
+  let s = input.normalize('NFKC').replace(UNSAFE_INVISIBLE_RE, '');
   if (s.length > maxLen) s = `${s.slice(0, maxLen)}…`;
-  s = s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  s = s.replace(/([*_~`])/g, `$1${ZWSP}`);
-  return s;
+  s = s.replace(SLACK_LINK_RE, '$1');
+  return renderLinksAsCode(s);
 }
 
 /** Mark a framework-authored literal as safe. NEVER call with user-derived text. */

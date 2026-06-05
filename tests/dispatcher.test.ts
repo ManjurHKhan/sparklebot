@@ -311,5 +311,10 @@ describe('context output boundary', () => {
     });
     await h.msg('.sparkle <@U0FAKE0002>');
     expect(h.fake.posts[0]!.text).toBe('hi &lt;!here&gt;');
+    expect(h.fake.posts[0]!).toMatchObject({
+      parse: 'none',
+      unfurl_links: false,
+      unfurl_media: false,
+    });
   });
 });
