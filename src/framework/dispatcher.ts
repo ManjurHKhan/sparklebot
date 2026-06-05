@@ -13,10 +13,16 @@ const MAX_TARGETS = 10;
 const MAX_REASON = 256;
 
 /** Minimal posting slice of WebClient the dispatcher owns. Plugins never see it. */
+interface SlackTextControls {
+  parse?: 'none';
+  unfurl_links?: false;
+  unfurl_media?: false;
+}
+
 export interface SlackPostClient {
   chat: {
-    postMessage(args: { channel: string; text: string }): Promise<unknown>;
-    postEphemeral(args: { channel: string; user: string; text: string }): Promise<unknown>;
+    postMessage(args: { channel: string; text: string } & SlackTextControls): Promise<unknown>;
+    postEphemeral(args: { channel: string; user: string; text: string } & SlackTextControls): Promise<unknown>;
   };
   conversations: { open(args: { users: string }): Promise<any> };
   reactions: { add(args: { channel: string; timestamp: string; name: string }): Promise<unknown> };
@@ -53,6 +59,7 @@ interface IncomingMessage {
 
 export function createDispatcher(deps: DispatcherDeps) {
   const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log } = deps;
+  const slackTextControls = { parse: 'none', unfurl_links: false, unfurl_media: false } as const;
 
   return async function dispatch({ message }: { message: IncomingMessage }): Promise<void> {
     // 1. Eligibility: human-authored channel message with text.
@@ -78,7 +85,12 @@ export function createDispatcher(deps: DispatcherDeps) {
     if (!commandLimiter.tryConsume(message.user, 1)) {
       try {
         await withRetry(() =>
-          client.chat.postEphemeral({ channel: message.channel, user: message.user!, text: 'Slow down — too many commands in a short window.' }),
+          client.chat.postEphemeral({
+            channel: message.channel,
+            user: message.user!,
+            text: 'Slow down — too many commands in a short window.',
+            ...slackTextControls,
+          }),
         );
       } catch (err) {
         log('postEphemeral failed', err);
@@ -98,7 +110,12 @@ export function createDispatcher(deps: DispatcherDeps) {
       assertSafe(msg);
       try {
         await withRetry(() =>
-          client.chat.postEphemeral({ channel: message.channel, user: message.user!, text: msg.text }),
+          client.chat.postEphemeral({
+            channel: message.channel,
+            user: message.user!,
+            text: msg.text,
+            ...slackTextControls,
+          }),
         );
       } catch (err) {
         log('postEphemeral failed', err);
@@ -205,14 +222,26 @@ export function createDispatcher(deps: DispatcherDeps) {
         botUserId,
         reply: async (msg) => {
           assertSafe(msg);
-          await withRetry(() => client.chat.postMessage({ channel: message.channel, text: msg.text }));
+          await withRetry(() =>
+            client.chat.postMessage({
+              channel: message.channel,
+              text: msg.text,
+              ...slackTextControls,
+            }),
+          );
         },
         replyEphemeral: ephemeral,
         replyDM: async (msg) => {
           assertSafe(msg);
           try {
             const dm = await withRetry(() => client.conversations.open({ users: giver.id }));
-            await withRetry(() => client.chat.postMessage({ channel: dm.channel.id, text: msg.text }));
+            await withRetry(() =>
+              client.chat.postMessage({
+                channel: dm.channel.id,
+                text: msg.text,
+                ...slackTextControls,
+              }),
+            );
           } catch {
             await ephemeral(msg); // closed-DM fallback — never fail silently
           }

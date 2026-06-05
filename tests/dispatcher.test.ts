@@ -311,5 +311,60 @@ describe('context output boundary', () => {
     });
     await h.msg('.sparkle <@U0FAKE0002>');
     expect(h.fake.posts[0]!.text).toBe('hi &lt;!here&gt;');
+    expect(h.fake.posts[0]!).toMatchObject({
+      parse: 'none',
+      unfurl_links: false,
+      unfurl_media: false,
+    });
+  });
+
+  it('replyEphemeral posts SafeText.text with Slack parsing controls', async () => {
+    const h = harness({
+      run: async (ctx) => {
+        const { fmt } = await import('../src/framework/safe.js');
+        await ctx.replyEphemeral(fmt`see ${'https://example.com'}`);
+      },
+    });
+    await h.msg('.sparkle <@U0FAKE0002>');
+    expect(h.fake.ephemerals[0]!).toMatchObject({
+      text: 'see `https://example.com`',
+      parse: 'none',
+      unfurl_links: false,
+      unfurl_media: false,
+    });
+  });
+
+  it('replyDM posts SafeText.text with Slack parsing controls', async () => {
+    const h = harness({
+      run: async (ctx) => {
+        const { fmt } = await import('../src/framework/safe.js');
+        await ctx.replyDM(fmt`dm ${'https://example.com'}`);
+      },
+    });
+    await h.msg('.sparkle <@U0FAKE0002>');
+    expect(h.fake.posts[0]!).toMatchObject({
+      channel: `D-${GIVER.id}`,
+      text: 'dm `https://example.com`',
+      parse: 'none',
+      unfurl_links: false,
+      unfurl_media: false,
+    });
+  });
+
+  it('replyDM fallback ephemeral keeps Slack parsing controls', async () => {
+    const h = harness({
+      run: async (ctx) => {
+        const { fmt } = await import('../src/framework/safe.js');
+        await ctx.replyDM(fmt`fallback ${'https://example.com'}`);
+      },
+    });
+    h.fake.client.conversations.open.mockRejectedValue(new Error('dm_closed') as never);
+    await h.msg('.sparkle <@U0FAKE0002>');
+    expect(h.fake.ephemerals[0]!).toMatchObject({
+      text: 'fallback `https://example.com`',
+      parse: 'none',
+      unfurl_links: false,
+      unfurl_media: false,
+    });
   });
 });
