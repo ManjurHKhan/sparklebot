@@ -1,9 +1,20 @@
 const ZWSP = '​';
 export const MAX_FIELD_LEN = 256;
 export const MAX_MESSAGE_LEN = 3000;
-const UNSAFE_INVISIBLE_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u202A-\u202E\u2066-\u2069]/g;
-const SLACK_LINK_RE = /<\s*((?:(?:https?|ftp):\/\/|www\.)[^\s<>()`|]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s<>()`|]+)?)(?:\|[^>]*)?\s*>/gi;
-const LINK_RE = /\b((?:(?:https?|ftp):\/\/|www\.)[^\s<>()`|]+|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s<>()`|]+)?)/gi;
+const UNSAFE_INVISIBLE_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g;
+const IDNA_DOT_RE = /[\u3002\uFF61]/g;
+const DOMAIN_LABEL = String.raw`[\p{L}\p{N}](?:[\p{L}\p{N}-]{0,61}[\p{L}\p{N}])?`;
+const DOMAIN_TLD = String.raw`(?:[\p{L}]{2,}|xn--[a-z0-9-]{2,})`;
+const DOMAIN = String.raw`(?:${DOMAIN_LABEL}\.)+${DOMAIN_TLD}(?![\p{L}\p{N}-])`;
+const URL_CHARS = String.raw`[^\s<>\x60|]+`;
+const URL_PATH = String.raw`(?:/${URL_CHARS})?`;
+const EMAIL = String.raw`[a-z0-9._%+-]+@${DOMAIN}`;
+const IPV4 = String.raw`(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?`;
+const IPV6 = String.raw`\[[0-9a-f:.]+\](?::\d+)?`;
+const SCHEME_LINK = String.raw`(?:[a-z][a-z0-9+.-]{1,31}://|(?:mailto|data|javascript):)${URL_CHARS}`;
+const LINK_TARGET = String.raw`${SCHEME_LINK}|www\.${URL_CHARS}|${EMAIL}|${DOMAIN}(?::\d+)?${URL_PATH}|${IPV4}${URL_PATH}|${IPV6}${URL_PATH}`;
+const SLACK_LINK_RE = new RegExp(String.raw`<\s*(${LINK_TARGET})(?:\s*\|[^>]*)?\s*>`, 'giu');
+const LINK_RE = new RegExp(String.raw`(?<![\p{L}\p{N}_])(${LINK_TARGET})`, 'giu');
 const TRAILING_LINK_PUNCT_RE = /[.,!?;:]+$/;
 
 function escapeSlackControls(s: string): string {
@@ -11,7 +22,10 @@ function escapeSlackControls(s: string): string {
 }
 
 function escapeNonLinkText(s: string): string {
-  return escapeSlackControls(s).replace(/([*_~`])/g, `$1${ZWSP}`);
+  return escapeSlackControls(s)
+    .replace(/@(?=here\b|channel\b|everyone\b)/gi, `@${ZWSP}`)
+    .replaceAll('`', '')
+    .replace(/([*_~])/g, `$1${ZWSP}`);
 }
 
 function codeLink(raw: string): string {
@@ -66,11 +80,12 @@ export function isSafe(v: unknown): v is SafeText {
  * - length cap
  * - entity-escape & < >  (kills <@mentions>, <!here>, <!channel>, <!subteam^…>, links)
  * - render URL-like text as inline code after Slack/Unicode normalization
- * - neutralize mrkdwn pair chars * _ ~ ` with a trailing ZWSP
+ * - strip user backticks, then neutralize mrkdwn pair chars * _ ~ with a trailing ZWSP
  */
 export function escapeText(input: string, maxLen: number = MAX_FIELD_LEN): string {
-  let s = input.normalize('NFKC').replace(UNSAFE_INVISIBLE_RE, '');
-  if (s.length > maxLen) s = `${s.slice(0, maxLen)}…`;
+  let s = input.normalize('NFKC').replace(UNSAFE_INVISIBLE_RE, '').replace(IDNA_DOT_RE, '.');
+  const limit = Math.min(maxLen, MAX_MESSAGE_LEN);
+  if (s.length > limit) s = `${s.slice(0, limit)}…`;
   s = s.replace(SLACK_LINK_RE, '$1');
   return renderLinksAsCode(s);
 }

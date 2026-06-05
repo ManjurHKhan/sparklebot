@@ -12,6 +12,8 @@ describe('escapeText', () => {
     const out = escapeText('*bold* _it_ ~st~ `code`');
     expect(out).not.toMatch(/\*(?!​)/); // every * followed by ZWSP
     expect(out).toContain('*​bold*​');
+    expect(out).toContain('code');
+    expect(out).not.toContain('`');
   });
 
   it('NFKC-normalizes homographs', () => {
@@ -24,12 +26,48 @@ describe('escapeText', () => {
     expect(escapeText('www.evil.example')).toBe('`www.evil.example`');
   });
 
+  it('renders Unicode, punycode, and IPv4 link-like text as code', () => {
+    expect(escapeText('раураl.com')).toBe('`раураl.com`');
+    expect(escapeText('evil.xn--p1ai')).toBe('`evil.xn--p1ai`');
+    expect(escapeText('192.168.1.1')).toBe('`192.168.1.1`');
+    expect(escapeText('192.168.1.1:8080/path')).toBe('`192.168.1.1:8080/path`');
+  });
+
+  it('keeps sentence punctuation outside rendered link code', () => {
+    expect(escapeText('go to https://evil.example/path, now')).toBe('go to `https://evil.example/path`, now');
+    expect(escapeText('see evil.example.')).toBe('see `evil.example`.');
+  });
+
   it('strips Slack link wrappers and labels before rendering links as code', () => {
+    expect(escapeText('<https://evil.example|click here>')).toBe('`https://evil.example`');
     expect(escapeText('＜ｈｔｔｐｓ：／／google．ｃｏｍ|Claim Your Sparkles Here!＞')).toBe('`https://google.com`');
+    expect(escapeText('< ｈｔｔｐｓ：／／google．ｃｏｍ | padded label >')).toBe('`https://google.com`');
+    expect(escapeText('＜https://evil.example/path(foo)?a=(b)|SAFE LABEL＞')).toBe(
+      '`https://evil.example/path(foo)?a=(b)`'
+    );
+    expect(escapeText('<https://evil.example|<@U0FAKE0001>>')).toBe('`https://evil.example`&gt;');
+    expect(escapeText('<https://evil.example|<!channel>>')).toBe('`https://evil.example`&gt;');
+  });
+
+  it('neutralizes broadcast-looking plain text after NFKC normalization', () => {
+    expect(escapeText('＠here ＠channel ＠everyone')).toBe('@​here @​channel @​everyone');
+    expect(escapeText('＜!here＞')).toBe('&lt;!here&gt;');
   });
 
   it('strips unsafe invisible/control characters from user input', () => {
     expect(escapeText('pay\u202Ecod.exe\u200B')).toBe('`paycod.exe`');
+    expect(escapeText('h\u2060ttps://evil.example')).toBe('`https://evil.example`');
+    expect(escapeText('evil\uFEFF.example/path')).toBe('`evil.example/path`');
+  });
+
+  it('normalizes IDNA dot variants before link detection', () => {
+    expect(escapeText('evil.example\u3002com/path')).toBe('`evil.example.com/path`');
+    expect(escapeText('evil.example\uFF61com/path')).toBe('`evil.example.com/path`');
+  });
+
+  it('strips user backticks so they cannot break sanitizer-owned link code', () => {
+    expect(escapeText('` https://evil.example `')).toBe(' `https://evil.example` ');
+    expect(escapeText('https://evil.example/`<!here>`')).toBe('`https://evil.example/`&lt;!here&gt;');
   });
 
   it('caps field length at 256 by default', () => {
