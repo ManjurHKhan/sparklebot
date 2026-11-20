@@ -18,6 +18,9 @@ spec:
       {{- include "sparklebot.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        # Config is read at startup: roll the pod whenever the ConfigMap changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         {{- include "sparklebot.selectorLabels" . | nindent 8 }}
     spec:

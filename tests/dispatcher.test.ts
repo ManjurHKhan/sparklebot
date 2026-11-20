@@ -5,6 +5,7 @@ import { SlackResolver } from '../src/framework/resolver.js';
 import { SlidingWindow } from '../src/framework/rate-limit.js';
 import { createSqliteStore } from '../src/store/sqlite.js';
 import { AccessLevel, type Command, type Context } from '../src/framework/types.js';
+import { trusted } from '../src/framework/safe.js';
 import { makeFakeSlack } from './helpers/fake-slack.js';
 
 const BOT = 'U0FAKEBOT9';
@@ -12,7 +13,7 @@ const GIVER = { id: 'U0FAKE0001', name: 'alice' };
 const TARGET = { id: 'U0FAKE0002', name: 'bob' };
 
 
-function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?: number } = {}) {
+function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?: number; ownerId?: string } = {}) {
   const fake = makeFakeSlack({
     users: [
       GIVER, TARGET,
@@ -50,12 +51,13 @@ function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?:
     botUserId: BOT,
     client: fake.client as never,
     log: () => {},
+    ownerId: opts.ownerId,
   });
   // Each call gets a unique ts (like real Slack messages); pass an explicit ts to
   // simulate a redelivery of the same message.
   let tsCounter = 0;
-  const msg = function(text: string, user?: string, ts?: string) {
-    const m: any = { type: 'message', text, channel: 'C0FAKE0001', ts: ts ?? `1.${++tsCounter}` };
+  const msg = function(text: string, user?: string, ts?: string, extra: Record<string, unknown> = {}) {
+    const m: any = { type: 'message', text, channel: 'C0FAKE0001', ts: ts ?? `1.${++tsCounter}`, ...extra };
     if (arguments.length === 1) {
       m.user = GIVER.id;
     } else if (user !== undefined) {
@@ -73,7 +75,7 @@ describe('dispatcher routing', () => {
     const h = harness();
     await h.msg('.sparkle <@U0FAKE0002> great work');
     expect(h.runs).toHaveLength(1);
-    expect(h.runs[0]!.mentions).toEqual([{ id: 'U0FAKE0002', name: 'bob', isBot: false }]);
+    expect(h.runs[0]!.mentions).toEqual([{ id: 'U0FAKE0002', name: 'bob', isBot: false, isGuest: false }]);
     expect(h.runs[0]!.args).toBe('great work');
     expect(h.runs[0]!.giver.id).toBe(GIVER.id);
   });
@@ -366,5 +368,76 @@ describe('context output boundary', () => {
       unfurl_links: false,
       unfurl_media: false,
     });
+  });
+});
+
+describe('notifyOwner', () => {
+  it('DMs the configured owner, and returns false with no owner', async () => {
+    const results: boolean[] = [];
+    const run = async (ctx: Context) => { results.push(await ctx.notifyOwner(trusted('an idea'))); };
+    const h = harness({ run }, { ownerId: 'U0FAKE0003' });
+    await h.msg('.sparkle party');
+    expect(results).toEqual([true]);
+    expect(h.fake.posts).toEqual([{ channel: 'D-U0FAKE0003', text: 'an idea', parse: 'none', unfurl_links: false, unfurl_media: false }]);
+
+    const none = harness({ run });
+    await none.msg('.sparkle party');
+    expect(results).toEqual([true, false]);
+    expect(none.fake.posts).toHaveLength(0);
+  });
+
+  it('returns false when the DM fails', async () => {
+    const results: boolean[] = [];
+    const h = harness({ run: async (ctx) => { results.push(await ctx.notifyOwner(trusted('x'))); } }, { ownerId: 'U0FAKE0003' });
+    h.fake.client.conversations.open.mockRejectedValue({ data: { error: 'user_not_found' } });
+    await h.msg('.sparkle party');
+    expect(results).toEqual([false]);
+  });
+
+  it('rejects a forged non-SafeText message', async () => {
+    const h = harness({}, { ownerId: 'U0FAKE0003' });
+    await h.msg('.sparkle party');
+    await expect(h.runs[0]!.notifyOwner({ text: '<!channel>' } as never)).rejects.toThrow();
+    expect(h.fake.posts).toHaveLength(0);
+  });
+});
+
+describe('messages sent through an app (AI agents)', () => {
+  const APP = { bot_id: 'B0FAKEAGT1', app_id: 'A0FAKEAGT1' };
+
+  it('a human sending through an agent runs the command, marked viaAgent', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002> thanks', GIVER.id, undefined, APP);
+    expect(h.runs).toHaveLength(1);
+    expect(h.runs[0]!.viaAgent).toBe(true);
+    expect(h.runs[0]!.giver.id).toBe(GIVER.id);
+  });
+
+  it.each([{ bot_id: 'B0FAKEAGT1' }, { app_id: 'A0FAKEAGT1' }, { bot_profile: { name: 'agent' } }])(
+    'any one attribution field marks viaAgent (%o)', async (extra) => {
+      const h = harness();
+      await h.msg('.sparkle <@U0FAKE0002>', GIVER.id, undefined, extra);
+      expect(h.runs[0]!.viaAgent).toBe(true);
+    });
+
+  it('a message typed by the human is not viaAgent', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002>');
+    expect(h.runs[0]!.viaAgent).toBe(false);
+  });
+
+  it('an app posting as itself is dropped silently', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002>', 'B0FAKEBOT1', undefined, APP);
+    await h.msg('.sparkle <@U0FAKE0002>', 'U0FAKEAPP1', undefined, APP);
+    expect(h.runs).toHaveLength(0);
+    expect(h.fake.ephemerals).toHaveLength(0);
+    expect(h.fake.posts).toHaveLength(0);
+  });
+
+  it('subtyped messages are still ignored even from a human', async () => {
+    const h = harness();
+    await h.msg('.sparkle <@U0FAKE0002>', GIVER.id, undefined, { ...APP, subtype: 'bot_message' });
+    expect(h.runs).toHaveLength(0);
   });
 });

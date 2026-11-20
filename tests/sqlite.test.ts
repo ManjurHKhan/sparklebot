@@ -20,6 +20,30 @@ describe('sqlite store', () => {
   beforeEach(() => { store = createSqliteStore(':memory:'); });
   afterEach(() => { store.close(); });
 
+  it('claimWelcome claims a user and records their sparkle exactly once', () => {
+    const welcome = row({ giverId: 'U0FAKEBOT9', receiverId: 'U0FAKE0005', reason: 'welcome' });
+    expect(store.claimWelcome(welcome)).toBe(true);
+    expect(store.claimWelcome(welcome)).toBe(false);
+    expect(store.getTotalReceived('U0FAKE0005')).toBe(1);
+    expect(store.claimWelcome({ ...welcome, receiverId: 'U0FAKE0006' })).toBe(true);
+  });
+
+  it('claimWelcome rolls the claim back when the sparkle insert fails', () => {
+    const welcome = row({ giverId: 'U0FAKEBOT9', receiverId: 'U0FAKE0005', reason: 'welcome' });
+    expect(() => store.claimWelcome({ ...welcome, channelId: null as never })).toThrow(); // NOT NULL
+    expect(store.claimWelcome(welcome)).toBe(true); // not left claimed
+    expect(store.getTotalReceived('U0FAKE0005')).toBe(1);
+  });
+
+  it('hasGivenToOthers ignores self rows and counts gives to others', () => {
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(false);
+    store.insertSparkles([row({ receiverId: 'U0FAKE0001' })]); // self row (giver = receiver)
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(false);
+    store.insertSparkles([row()]); // to someone else
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(true);
+    expect(store.hasGivenToOthers('U0FAKE0002')).toBe(false); // receiving is not giving
+  });
+
   it('inserts and counts sparkles', () => {
     store.insertSparkles([row()]);
     expect(store.getTotalReceived('U0FAKE0002')).toBe(1);

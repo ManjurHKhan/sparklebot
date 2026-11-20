@@ -12,6 +12,9 @@ const BROADCAST_RE = /<!(?:here|channel|everyone)(?:\|[^>]*)?>|<!subteam\^[^>]*>
 const MAX_TARGETS = 10;
 const MAX_REASON = 256;
 
+/** On every outbound post: no auto-linking of names/channels, no link or media previews. */
+export const SLACK_TEXT_CONTROLS = { parse: 'none', unfurl_links: false, unfurl_media: false } as const;
+
 /** Minimal posting slice of WebClient the dispatcher owns. Plugins never see it. */
 interface SlackTextControls {
   parse?: 'none';
@@ -45,12 +48,17 @@ export interface DispatcherDeps {
   log: (...args: unknown[]) => void;
   /** Restricted-command allowlist (user IDs). Empty in v0.1 — no restricted command ships. */
   restrictedAllowlist?: Set<string>;
+  /** Operator-configured recipient of ctx.notifyOwner (validated user ID). Unset = disabled. */
+  ownerId?: string;
 }
 
 interface IncomingMessage {
   type: string;
   subtype?: string;
   bot_id?: string;
+  app_id?: string;
+  bot_profile?: unknown;
+  client_msg_id?: string;
   text?: string;
   user?: string;
   channel: string;
@@ -58,21 +66,32 @@ interface IncomingMessage {
 }
 
 export function createDispatcher(deps: DispatcherDeps) {
-  const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log } = deps;
-  const slackTextControls = { parse: 'none', unfurl_links: false, unfurl_media: false } as const;
+  const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log, ownerId } = deps;
+  const slackTextControls = SLACK_TEXT_CONTROLS;
 
   return async function dispatch({ message }: { message: IncomingMessage }): Promise<void> {
-    // 1. Eligibility: human-authored channel message with text.
-    if (!message?.text || !message.user || message.subtype || message.bot_id) {
+    // 1. Eligibility: a plain channel message with a user and text. App attribution alone
+    // doesn't disqualify it: an agent posting on a person's behalf carries the person's user
+    // ID. Who actually sent it is settled by resolving that user at the giver gate. `user` is
+    // the token owner: chat.postMessage has no parameter that sets it (chat:write.customize only
+    // changes the display name and icon), so an app carries a human's ID only with that human's
+    // own token, i.e. the person authorized the agent.
+    if (!message?.text || !message.user || message.subtype) {
       if (process.env.DEBUG_DISPATCHER) log('DISPATCH: Returning early, message:', { text: message?.text, user: message?.user, subtype: message?.subtype, bot_id: message?.bot_id });
       return;
     }
+    const viaApp = Boolean(message.bot_id || message.app_id || message.bot_profile);
 
     // 2. Token parse + lookup. Unknown .token → silently ignored (not a command).
     const tokenMatch = message.text.match(TOKEN_RE);
     if (!tokenMatch) return;
     const command = registry.lookup(tokenMatch[1]!.toLowerCase());
     if (!command) return;
+    // Slack doesn't document which fields an on-behalf app post carries; log them per command.
+    log(`command .${command.name()}`, {
+      user: message.user, bot_id: message.bot_id, app_id: message.app_id,
+      bot_profile: Boolean(message.bot_profile), client_msg_id: Boolean(message.client_msg_id),
+    });
     const rawArgs = message.text.slice(tokenMatch[0].length).trim();
 
     // Idempotency: Bolt redelivers a message on slow ack or Socket Mode reconnect, and a
@@ -126,6 +145,7 @@ export function createDispatcher(deps: DispatcherDeps) {
       // 3. Human-giver gate — deny by default. Resolution by API response, not ID shape.
       const giver = await resolver.resolveUser(message.user);
       if (!giver || giver.isBot) {
+        if (viaApp) return; // an app or agent posting as itself: silent, never a giver
         await ephemeral(trusted('Only humans can use this command.'));
         return;
       }
@@ -220,6 +240,7 @@ export function createDispatcher(deps: DispatcherDeps) {
         giver,
         channel: { id: message.channel, name: channelName },
         botUserId,
+        viaAgent: viaApp,
         reply: async (msg) => {
           assertSafe(msg);
           await withRetry(() =>
@@ -253,6 +274,20 @@ export function createDispatcher(deps: DispatcherDeps) {
             );
           } catch (err) {
             log('reaction failed', err);
+          }
+        },
+        notifyOwner: async (msg) => {
+          assertSafe(msg);
+          if (!ownerId) return false;
+          try {
+            const dm = await withRetry(() => client.conversations.open({ users: ownerId }));
+            await withRetry(() =>
+              client.chat.postMessage({ channel: dm.channel.id, text: msg.text, ...slackTextControls }),
+            );
+            return true;
+          } catch (err) {
+            log('notifyOwner failed', err);
+            return false;
           }
         },
         rate: { tryConsume: (n: number) => rateLimiter.tryConsume(giver.id, n) },

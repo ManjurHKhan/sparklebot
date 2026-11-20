@@ -43,4 +43,37 @@ describe.skipIf(!helmAvailable())('helm chart single-writer guarantees', () => {
     expect(out).toContain('SPARKLE_CMD_LIMIT');
     expect(out).not.toContain('SPARKLE_EMOJI');
   });
+
+  it('renders the welcome, tour, mega emoji and suggest settings', () => {
+    const tour = [{ id: 'C0FAKE0002', about: `say "hi" \\ it's café <&>` }];
+    const out = render([
+      '--set', 'sparkle.welcomeChannel=C0FAKE0001',
+      '--set', 'sparkle.suggestTo=U0FAKE0001',
+      '--set', 'sparkle.megaEmoji=:boom:',
+      '--set-json', `sparkle.welcomeChannels=${JSON.stringify(tour)}`,
+    ]);
+    // YAML double-quoted scalar holding JSON: parse the scalar, then the JSON.
+    const raw = out.match(/^\s*SPARKLE_WELCOME_CHANNELS: (".*")$/m)?.[1];
+    expect(raw).toBeDefined();
+    expect(JSON.parse(JSON.parse(raw!))).toEqual(tour);
+    expect(out).toContain('SPARKLE_WELCOME_CHANNEL: "C0FAKE0001"');
+    expect(out).toContain('SPARKLE_SUGGEST_TO: "U0FAKE0001"');
+    expect(out).toContain('SPARKLE_MEGA_EMOJI: ":boom:"');
+  });
+
+  it('rolls the pod when only the ConfigMap changes', () => {
+    const sum = (args: string[]) => render(args).match(/checksum\/config: (\w+)/)?.[1];
+    const a = sum(['--set', 'sparkle.welcomeChannel=C0FAKE0001']);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(sum(['--set', 'sparkle.welcomeChannel=C0FAKE0001'])).toBe(a);
+    expect(sum(['--set', 'sparkle.welcomeChannel=C0FAKE0002'])).not.toBe(a);
+  });
+
+  it('defaults leave every new feature off', () => {
+    const out = render();
+    expect(out).toContain('SPARKLE_WELCOME_CHANNEL: ""');
+    expect(out).toContain('SPARKLE_WELCOME_CHANNELS: "[]"');
+    expect(out).toContain('SPARKLE_SUGGEST_TO: ""');
+    expect(out).toContain('SPARKLE_MEGA_EMOJI: ""');
+  });
 });

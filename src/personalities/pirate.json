@@ -29,5 +29,24 @@
     "☠️ Arrr! {user} showered {count} sailors with {currency} in {channel}! The fleet celebrates! ⚓\n> {recipients}",
     "💥 Blow the cannons! {user} sparkled {count} crew members in {channel}!\n> {recipients}",
     "🗺️ {user} raided {channel} with {count} {currency}! Every pirate gets a share! ⚓\n> {recipients}"
+  ],
+  "welcomePublic": [
+    "🏴‍☠️ AHOY! A new hand be boardin' the ship! Welcome, {mention}! Yer first {currency} be already in yer chest!",
+    "⚓ All hands, welcome {mention} to the crew! Here be a {currency} to start yer plunder! 🦜",
+    "🗺️ Fresh crew sighted off the bow! Welcome aboard, {mention}! I've stashed a {currency} in yer bunk! ☠️"
+  ],
+  "welcomeDM": [
+    "🏴‍☠️ Ahoy {user}, welcome aboard! I be Sparklebot, keeper of the {currency} treasure. Ye already have one from me!",
+    "⚓ Welcome to the crew, {user}! I count the {currencyPlural} me hearties give each other. Here be the lay of the ship:",
+    "🦜 Arrr, {user}! Sparklebot here, quartermaster of the {currency} hoard. I've already put one in yer chest!"
+  ],
+  "firstGiveBonus": [
+    "🍻 {user} shared their first {currency}! A true pirate shares the plunder, so here be one back! *{count}* ✨!",
+    "⚓ Generous sailor! {user} gave their first {currency}, and the captain rewards 'em with another! *{count}* ✨!",
+    "🏴‍☠️ {user} be sharin' the treasure! For yer first give, a {currency} from the ship's chest! *{count}* ✨!"
+  ],
+  "agentNudge": [
+    "🦜 Arrr, {user} sent a parrot to deliver the treasure! A true pirate says it with their own mouth next time :p",
+    "⚓ {user} had a robot deckhand hand out the plunder! It counts, matey, but next time say it yerself :p"
   ]
 }

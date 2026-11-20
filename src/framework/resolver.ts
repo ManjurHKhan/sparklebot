@@ -30,6 +30,23 @@ export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T
   }
 }
 
+// Slackbot reports is_bot=false (Slack's user-object docs); its fixed ID is the conventional one.
+const SLACKBOT_ID = 'USLACKBOT';
+
+// Slack documents these at the top level, on the profile, or both. Check both placements for
+// every flag: a placement Slack doesn't document today costs nothing to check.
+const NON_HUMAN_FLAGS = ['is_bot', 'is_app_user', 'is_workflow_bot', 'is_agentforce_bot', 'is_sidekick_bot'];
+const GUEST_FLAGS = ['is_restricted', 'is_ultra_restricted'];
+
+function anyFlag(u: any, flags: string[]): boolean {
+  return flags.some((f) => u[f] === true || u.profile?.[f] === true);
+}
+
+/** Every documented non-human marker on a user object, not just is_bot. */
+function isNonHuman(u: any): boolean {
+  return anyFlag(u, NON_HUMAN_FLAGS) || Boolean(u.profile?.bot_id) || u.id === SLACKBOT_ID;
+}
+
 class BoundedCache<V> {
   private map = new Map<string, { v: V; exp: number }>();
   constructor(private readonly max: number, private readonly ttlMs: number) {}
@@ -77,7 +94,8 @@ export class SlackResolver implements ResolverApi {
     const user: User = {
       id: u.id,
       name: u.profile?.display_name || u.profile?.real_name || u.real_name || u.name || u.id,
-      isBot: u.is_bot === true || u.is_app_user === true,
+      isBot: isNonHuman(u),
+      isGuest: anyFlag(u, GUEST_FLAGS),
     };
     this.userCache.set(id, user);
     return user;

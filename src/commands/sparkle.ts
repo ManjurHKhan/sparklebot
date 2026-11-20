@@ -1,4 +1,4 @@
-import { fmt, joinSafe, trusted, type SafeText } from '../framework/safe.js';
+import { channelLink, fmt, joinSafe, trusted, type SafeText } from '../framework/safe.js';
 import { AccessLevel, type Command, type Context, type User } from '../framework/types.js';
 import type { Cooldown } from '../framework/rate-limit.js';
 import type { Messages } from '../messages.js';
@@ -18,7 +18,13 @@ export interface SparkleDeps {
   config: SparkleConfig;
   partyChannelCooldown: Cooldown; // key `${giverId}:${channelId}`
   partyGiverCooldown: Cooldown;   // key giverId (cross-channel)
+  /** Emoji-only "explosion" posted once per run that crosses a milestone. */
+  megaBurst: SafeText;
 }
+
+export const MEGA_TIERS = [5, 10, 25, 50, 100] as const;
+
+const isMilestone = (total: number) => total === 1 || (MEGA_TIERS as readonly number[]).includes(total);
 
 export function tierEmoji(count: number): string {
   if (count >= 100) return ':gem:';
@@ -47,22 +53,52 @@ function formatSparkle(giver: User, receiver: User, reason: string, total: numbe
 export function createSparkleCommand(deps: SparkleDeps): Command {
   const { messages, config } = deps;
 
-  async function awardHumans(ctx: Context, targets: User[]): Promise<void> {
-    // Pre-compute first-sparkle flags, then write all rows in one transaction, then post.
-    const firstFlags = new Map(targets.map((t) => [t.id, ctx.store.isFirstSparkle(t.id)]));
-    const rows: SparkleRow[] = targets.map((t) => ({
-      giverId: ctx.giver.id,
-      giverName: ctx.giver.name,
-      receiverId: t.id,
-      receiverName: t.name,
-      reason: normalizeReason(ctx.args) || null,
-      channelId: ctx.channel.id,
-      channelName: ctx.channel.name,
+  /**
+   * Insert the award rows (plus the first-give bonus row when earned) and read every total,
+   * all synchronously: no await between the bonus check and the insert (so concurrent runs
+   * can't both earn the bonus) or between the insert and the reads (so a milestone isn't
+   * missed because another command moved a total while this run was posting).
+   */
+  function recordAwards(ctx: Context, recipients: User[], reason: string | null) {
+    if (recipients.length === 0) return { awarded: false, bonusTotal: 0, celebrate: false, totals: new Map<string, number>() };
+    const bonus = !ctx.store.hasGivenToOthers(ctx.giver.id);
+    const rows: SparkleRow[] = recipients.map((r) => ({
+      giverId: ctx.giver.id, giverName: ctx.giver.name,
+      receiverId: r.id, receiverName: r.name,
+      reason,
+      channelId: ctx.channel.id, channelName: ctx.channel.name,
     }));
+    if (bonus) {
+      rows.push({
+        giverId: ctx.botUserId, giverName: 'Sparklebot',
+        receiverId: ctx.giver.id, receiverName: ctx.giver.name,
+        reason: 'first sparkle given',
+        channelId: ctx.channel.id, channelName: ctx.channel.name,
+      });
+    }
     ctx.store.insertSparkles(rows);
+    const totals = new Map(recipients.map((r) => [r.id, ctx.store.getTotalReceived(r.id)]));
+    const bonusTotal = bonus ? ctx.store.getTotalReceived(ctx.giver.id) : 0;
+    const celebrate = bonus || [...totals.values()].some(isMilestone);
+    return { awarded: true, bonusTotal, celebrate, totals };
+  }
+
+  /** After the award messages: agent nudge, bonus line (if earned), then at most one explosion. */
+  async function finishAwards(ctx: Context, { awarded, bonusTotal, celebrate }: ReturnType<typeof recordAwards>): Promise<void> {
+    if (awarded && ctx.viaAgent) await ctx.reply(messages.agentNudge({ user: fmt`*${ctx.giver.name}*` }));
+    if (bonusTotal > 0) {
+      await ctx.reply(messages.firstGiveBonus({ user: fmt`*${ctx.giver.name}*`, count: bonusTotal, currency: config.currency }));
+    }
+    if (celebrate) await ctx.reply(deps.megaBurst);
+  }
+
+  async function awardHumans(ctx: Context, targets: User[]): Promise<void> {
+    const firstFlags = new Map(targets.map((t) => [t.id, ctx.store.isFirstSparkle(t.id)]));
+    const rec = recordAwards(ctx, targets, normalizeReason(ctx.args) || null);
+    const { totals } = rec;
 
     for (const t of targets) {
-      const total = ctx.store.getTotalReceived(t.id);
+      const total = totals.get(t.id)!;
       if (firstFlags.get(t.id)) {
         const currency = total === 1 ? config.currency : config.currencyPlural;
         await ctx.reply(
@@ -80,6 +116,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
         await ctx.reply(formatSparkle(ctx.giver, t, ctx.args, total, config));
       }
     }
+    await finishAwards(ctx, rec);
   }
 
   async function runSelf(ctx: Context): Promise<void> {
@@ -102,6 +139,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
   }
 
   async function runParty(ctx: Context): Promise<void> {
+    const channelTag = channelLink(ctx.channel.id); // throws on a bad ID, before any side effect
     // Party takes no targets — a trailing mention means the giver expected a targeted
     // sparkle, not "sparkle whoever posted recently". Reject before any cooldown burns.
     if (/<@[A-Z0-9]+(?:\|[^>]*)?>/.test(ctx.args)) {
@@ -141,17 +179,12 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
       if (u && !u.isBot) recipients.push(u);
     }
 
-    ctx.store.insertSparkles(
-      recipients.map((r) => ({
-        giverId: ctx.giver.id, giverName: ctx.giver.name,
-        receiverId: r.id, receiverName: r.name,
-        reason: 'party',
-        channelId: ctx.channel.id, channelName: ctx.channel.name,
-      })),
-    );
+    // After every await above: the check, insert and reads must stay in one synchronous block.
+    const rec = recordAwards(ctx, recipients, 'party');
+    const { totals } = rec;
 
     const lines = recipients.map((r) => {
-      const total = ctx.store.getTotalReceived(r.id);
+      const total = totals.get(r.id)!;
       return fmt`${trusted(tierEmoji(total))} *${r.name}* now has *${total}* ✨`;
     });
     const people = recipients.length === 1 ? 'person' : 'people';
@@ -160,12 +193,13 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
       messages.partyAnnouncement({
         user: fmt`*${ctx.giver.name}*`,
         count: recipients.length,
-        channel: trusted(`<#${ctx.channel.id}>`),
+        channel: channelTag,
         currency,
         recipients: joinSafe(lines, '\n> '),
         people,
       }),
     );
+    await finishAwards(ctx, rec);
   }
 
   return {

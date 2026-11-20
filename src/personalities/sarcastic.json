@@ -29,5 +29,24 @@
     "Mass recognition event: {user} just sparkled {count} {people} in {channel}. Allegedly celebrating.\n> {recipients}",
     "Gather round, {channel}. {user} sparkled {count} {people}. We're calling it a party.\n> {recipients}",
     "{user} dropped {count} {currency} on {channel}. Party's here. Try to look surprised.\n> {recipients}"
+  ],
+  "welcomePublic": [
+    "Oh look, a new person. Welcome, {mention}. I already gave you a {currency}. It's a tradition. I started it just now.",
+    "{mention} just joined. Everyone act natural. I've given them a {currency}, which I'm told is how we say hello here.",
+    "Welcome, {mention}. Here's a {currency}. No speech, I'm a bot of few feelings. But they're all good ones."
+  ],
+  "welcomeDM": [
+    "Hi {user}. I'm Sparklebot. I count the {currencyPlural} people give each other, and I already gave you one. Spend it wisely. Or don't, it's a number.",
+    "Welcome, {user}. I'm the bot that turns appreciation into a leaderboard. You're already on it. Congratulations, sincerely.",
+    "Oh good, {user} is here. I'm Sparklebot. I gave you a {currency} before you did anything, which is my favorite kind of generosity."
+  ],
+  "firstGiveBonus": [
+    "{user} gave their first {currency}. Look at that, actual teamwork. Here's one back. *{count}* ✨.",
+    "Wow, {user} sparkled someone. I'm told this deserves a reward, so here's a {currency}. *{count}* ✨.",
+    "{user} has discovered generosity. I've been instructed to encourage this. One {currency}. *{count}* ✨."
+  ],
+  "agentNudge": [
+    "Ah, {user} had a robot say thank you for them. Heartfelt. Maybe type it yourself next time :p",
+    "{user} delegated their appreciation to an AI. Peak efficiency. It still counts, somehow :p"
   ]
 }

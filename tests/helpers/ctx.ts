@@ -11,6 +11,8 @@ export function makeCtx(over: Partial<Context> = {}) {
   const replies: string[] = [];
   const ephemerals: string[] = [];
   const dms: string[] = [];
+  const ownerDms: string[] = [];
+  const owner = { fail: false };
   const ctx: Context = {
     command: 'sparkle',
     args: '',
@@ -18,9 +20,15 @@ export function makeCtx(over: Partial<Context> = {}) {
     giver: GIVER,
     channel: { id: 'C0FAKE0001', name: 'general' },
     botUserId: BOT,
+    viaAgent: false,
     reply: vi.fn(async (m: SafeText) => { replies.push(m.text); }),
     replyEphemeral: vi.fn(async (m: SafeText) => { ephemerals.push(m.text); }),
     replyDM: vi.fn(async (m: SafeText) => { dms.push(m.text); }),
+    notifyOwner: vi.fn(async (m: SafeText) => {
+      if (owner.fail) return false;
+      ownerDms.push(m.text);
+      return true;
+    }),
     react: vi.fn(async () => {}),
     rate: { tryConsume: () => true },
     store,
@@ -32,5 +40,5 @@ export function makeCtx(over: Partial<Context> = {}) {
     log: () => {},
     ...over,
   };
-  return { ctx, store, replies, ephemerals, dms };
+  return { ctx, store, replies, ephemerals, dms, ownerDms, owner };
 }
