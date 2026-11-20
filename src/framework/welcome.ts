@@ -61,14 +61,15 @@ export function createWelcomeHandler(deps: WelcomeDeps) {
       log(`welcome: skipping ${id} (not a full member)`);
       return;
     }
-    if (!store.markWelcomed(user.id)) return; // Slack redelivered the event
-
     const channel = config.welcomeChannel;
+    const channelName = await resolver.channelName(channel);
+    // Claim and record with no await between them: a claimed member always has their sparkle.
+    if (!store.markWelcomed(user.id)) return; // Slack redelivered the event
     store.insertSparkles([{
       giverId: botUserId, giverName: 'Sparklebot',
       receiverId: user.id, receiverName: user.name,
       reason: 'welcome',
-      channelId: channel, channelName: await resolver.channelName(channel),
+      channelId: channel, channelName,
     }]);
 
     const publicBranch = async () => {
