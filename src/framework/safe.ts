@@ -122,8 +122,10 @@ export function joinSafe(parts: SafeText[], sep: string): SafeText {
   return create(parts.map((p) => p.text).join(sep));
 }
 
-// The only ways to emit a ping, a channel link or raw shortcodes. Each pattern excludes every
-// markup delimiter (< > | & ! whitespace), so a match can't break out of its token.
+// The only ways to emit a ping or a channel link, and to emit shortcodes verbatim (escapeText ZWSPs
+// the `_` in `:a_b:`). Simple shortcodes in user text (`thanks :tada:`) pass on purpose: emoji
+// can't ping, link or broadcast. Each pattern excludes every markup delimiter
+// (< > | & ! whitespace), so a match can't break out of its token.
 export const USER_ID_RE = /^[UW][A-Z0-9]{8,}$/;
 export const CHANNEL_ID_RE = /^[CG][A-Z0-9]{8,}$/; // G: legacy private channels
 export const EMOJI_BURST_RE = /^(?::[a-z0-9_+-]+:){1,23}$/;
