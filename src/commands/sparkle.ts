@@ -1,4 +1,4 @@
-import { fmt, joinSafe, trusted, type SafeText } from '../framework/safe.js';
+import { channelLink, fmt, joinSafe, trusted, type SafeText } from '../framework/safe.js';
 import { AccessLevel, type Command, type Context, type User } from '../framework/types.js';
 import type { Cooldown } from '../framework/rate-limit.js';
 import type { Messages } from '../messages.js';
@@ -139,6 +139,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
   }
 
   async function runParty(ctx: Context): Promise<void> {
+    const channelTag = channelLink(ctx.channel.id); // throws on a bad ID, before any side effect
     // Party takes no targets — a trailing mention means the giver expected a targeted
     // sparkle, not "sparkle whoever posted recently". Reject before any cooldown burns.
     if (/<@[A-Z0-9]+(?:\|[^>]*)?>/.test(ctx.args)) {
@@ -192,7 +193,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
       messages.partyAnnouncement({
         user: fmt`*${ctx.giver.name}*`,
         count: recipients.length,
-        channel: trusted(`<#${ctx.channel.id}>`),
+        channel: channelTag,
         currency,
         recipients: joinSafe(lines, '\n> '),
         people,

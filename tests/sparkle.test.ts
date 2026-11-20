@@ -213,6 +213,13 @@ describe('.sparkle party', () => {
     expect(h4.replies).toHaveLength(3); // fresh store: announcement + first-give bonus + explosion
   });
 
+  it('a channel ID channelLink rejects fails before any award', async () => {
+    const h = partyHarness(['U0FAKE0002']);
+    h.ctx.channel.id = 'D0FAKE0001';
+    await expect(cmd().run(h.ctx)).rejects.toThrow();
+    expect(h.store.getLeaderboard(10)).toHaveLength(0);
+  });
+
   it('replies when no one is active', async () => {
     const h = partyHarness([]);
     await cmd().run(h.ctx);
