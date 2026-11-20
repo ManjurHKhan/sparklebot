@@ -30,6 +30,8 @@ describe('team_join welcome', () => {
     ['bot', { id: NEW, is_bot: true }],
     ['app user', { id: NEW, is_app_user: true }],
     ['workflow bot', { id: NEW, is_workflow_bot: true }],
+    ['Agentforce bot (profile flag)', { id: NEW, profile: { is_agentforce_bot: true } }],
+    ['Sidekick bot (top-level flag)', { id: NEW, is_sidekick_bot: true }],
     ['multi-channel guest', { id: NEW, is_restricted: true }],
     ['single-channel guest', { id: NEW, is_ultra_restricted: true }],
     ['deleted', { id: NEW, deleted: true }],

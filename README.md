@@ -264,7 +264,7 @@ helm install sparklebot helm/sparklebot/
 
 ### Deny-by-Default
 
-The bot rejects commands from non-humans (bots, app users) at the middleware layer, before any handler code runs. This prevents self-sparkles from the bot itself or other integrations.
+The bot rejects commands from non-humans (bots, app users, workflow, Agentforce and Sidekick bots, Slackbot) at the middleware layer, before any handler code runs. This prevents self-sparkles from the bot itself or other integrations.
 
 ### Resolved Targets Only
 
@@ -329,7 +329,7 @@ sparklebot/
       professional.json
       sarcastic.json
       pirate.json
-  tests/                  -- Vitest test files (220 tests)
+  tests/                  -- Vitest test files (240 tests)
   helm/sparklebot/        -- Helm chart
   Dockerfile              -- Multi-stage Node 24 alpine build
 ```

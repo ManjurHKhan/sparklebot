@@ -12,6 +12,7 @@ export interface FakeUser {
   display_name?: string;
   is_workflow_bot?: boolean;
   is_agentforce_bot?: boolean;
+  is_sidekick_bot?: boolean;
   /** Extra profile fields (e.g. bot_id, is_sidekick_bot). */
   profile?: Record<string, unknown>;
 }
@@ -56,6 +57,7 @@ export function makeFakeSlack(opts: {
             is_ultra_restricted: u.is_ultra_restricted ?? false,
             ...(u.is_workflow_bot !== undefined && { is_workflow_bot: u.is_workflow_bot }),
             ...(u.is_agentforce_bot !== undefined && { is_agentforce_bot: u.is_agentforce_bot }),
+            ...(u.is_sidekick_bot !== undefined && { is_sidekick_bot: u.is_sidekick_bot }),
             real_name: u.name ?? 'Someone',
             profile: {
               display_name: 'display_name' in u ? u.display_name : (u.name ?? 'someone'),

@@ -33,10 +33,13 @@ export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T
 // Slackbot reports is_bot=false (Slack's user-object docs); its fixed ID is the conventional one.
 const SLACKBOT_ID = 'USLACKBOT';
 
+// Slack documents these at the top level, on the profile, or both. Check both placements for
+// every flag: a placement Slack doesn't document today costs nothing to check.
+const NON_HUMAN_FLAGS = ['is_bot', 'is_app_user', 'is_workflow_bot', 'is_agentforce_bot', 'is_sidekick_bot'];
+
 /** Every documented non-human marker on a user object, not just is_bot. */
 function isNonHuman(u: any): boolean {
-  return u.is_bot === true || u.is_app_user === true || u.is_workflow_bot === true
-    || u.is_agentforce_bot === true || u.profile?.is_sidekick_bot === true
+  return NON_HUMAN_FLAGS.some((f) => u[f] === true || u.profile?.[f] === true)
     || Boolean(u.profile?.bot_id) || u.id === SLACKBOT_ID;
 }
 
