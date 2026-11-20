@@ -12,6 +12,9 @@ const BROADCAST_RE = /<!(?:here|channel|everyone)(?:\|[^>]*)?>|<!subteam\^[^>]*>
 const MAX_TARGETS = 10;
 const MAX_REASON = 256;
 
+/** On every outbound post: no auto-linking of names/channels, no link or media previews. */
+export const SLACK_TEXT_CONTROLS = { parse: 'none', unfurl_links: false, unfurl_media: false } as const;
+
 /** Minimal posting slice of WebClient the dispatcher owns. Plugins never see it. */
 interface SlackTextControls {
   parse?: 'none';
@@ -45,6 +48,8 @@ export interface DispatcherDeps {
   log: (...args: unknown[]) => void;
   /** Restricted-command allowlist (user IDs). Empty in v0.1 — no restricted command ships. */
   restrictedAllowlist?: Set<string>;
+  /** Operator-configured recipient of ctx.notifyOwner (validated user ID). Unset = disabled. */
+  ownerId?: string;
 }
 
 interface IncomingMessage {
@@ -58,8 +63,8 @@ interface IncomingMessage {
 }
 
 export function createDispatcher(deps: DispatcherDeps) {
-  const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log } = deps;
-  const slackTextControls = { parse: 'none', unfurl_links: false, unfurl_media: false } as const;
+  const { registry, resolver, store, rateLimiter, commandLimiter, botUserId, client, log, ownerId } = deps;
+  const slackTextControls = SLACK_TEXT_CONTROLS;
 
   return async function dispatch({ message }: { message: IncomingMessage }): Promise<void> {
     // 1. Eligibility: human-authored channel message with text.
@@ -253,6 +258,20 @@ export function createDispatcher(deps: DispatcherDeps) {
             );
           } catch (err) {
             log('reaction failed', err);
+          }
+        },
+        notifyOwner: async (msg) => {
+          assertSafe(msg);
+          if (!ownerId) return false;
+          try {
+            const dm = await withRetry(() => client.conversations.open({ users: ownerId }));
+            await withRetry(() =>
+              client.chat.postMessage({ channel: dm.channel.id, text: msg.text, ...slackTextControls }),
+            );
+            return true;
+          } catch (err) {
+            log('notifyOwner failed', err);
+            return false;
           }
         },
         rate: { tryConsume: (n: number) => rateLimiter.tryConsume(giver.id, n) },

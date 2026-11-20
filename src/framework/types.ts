@@ -38,6 +38,11 @@ export interface Context {
   /** DM the giver; falls back to ephemeral channel reply if the DM fails. */
   replyDM(msg: SafeText): Promise<void>;
   react(emoji: string): Promise<void>;
+  /**
+   * DM the operator-configured owner (never an arbitrary user). Returns false when no owner
+   * is configured or delivery fails.
+   */
+  notifyOwner(msg: SafeText): Promise<boolean>;
   /** Sliding-window budget bound to the giver. Charge before awarding. */
   rate: { tryConsume(n: number): boolean };
   store: Store;

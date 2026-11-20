@@ -5,6 +5,7 @@ import { SlackResolver } from '../src/framework/resolver.js';
 import { SlidingWindow } from '../src/framework/rate-limit.js';
 import { createSqliteStore } from '../src/store/sqlite.js';
 import { AccessLevel, type Command, type Context } from '../src/framework/types.js';
+import { trusted } from '../src/framework/safe.js';
 import { makeFakeSlack } from './helpers/fake-slack.js';
 
 const BOT = 'U0FAKEBOT9';
@@ -12,7 +13,7 @@ const GIVER = { id: 'U0FAKE0001', name: 'alice' };
 const TARGET = { id: 'U0FAKE0002', name: 'bob' };
 
 
-function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?: number } = {}) {
+function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?: number; ownerId?: string } = {}) {
   const fake = makeFakeSlack({
     users: [
       GIVER, TARGET,
@@ -50,6 +51,7 @@ function harness(commandOverrides: Partial<Command> = {}, opts: { commandLimit?:
     botUserId: BOT,
     client: fake.client as never,
     log: () => {},
+    ownerId: opts.ownerId,
   });
   // Each call gets a unique ts (like real Slack messages); pass an explicit ts to
   // simulate a redelivery of the same message.
@@ -366,5 +368,36 @@ describe('context output boundary', () => {
       unfurl_links: false,
       unfurl_media: false,
     });
+  });
+});
+
+describe('notifyOwner', () => {
+  it('DMs the configured owner, and returns false with no owner', async () => {
+    const results: boolean[] = [];
+    const run = async (ctx: Context) => { results.push(await ctx.notifyOwner(trusted('an idea'))); };
+    const h = harness({ run }, { ownerId: 'U0FAKE0003' });
+    await h.msg('.sparkle party');
+    expect(results).toEqual([true]);
+    expect(h.fake.posts).toEqual([{ channel: 'D-U0FAKE0003', text: 'an idea', parse: 'none', unfurl_links: false, unfurl_media: false }]);
+
+    const none = harness({ run });
+    await none.msg('.sparkle party');
+    expect(results).toEqual([true, false]);
+    expect(none.fake.posts).toHaveLength(0);
+  });
+
+  it('returns false when the DM fails', async () => {
+    const results: boolean[] = [];
+    const h = harness({ run: async (ctx) => { results.push(await ctx.notifyOwner(trusted('x'))); } }, { ownerId: 'U0FAKE0003' });
+    h.fake.client.conversations.open.mockRejectedValue({ data: { error: 'user_not_found' } });
+    await h.msg('.sparkle party');
+    expect(results).toEqual([false]);
+  });
+
+  it('rejects a forged non-SafeText message', async () => {
+    const h = harness({}, { ownerId: 'U0FAKE0003' });
+    await h.msg('.sparkle party');
+    await expect(h.runs[0]!.notifyOwner({ text: '<!channel>' } as never)).rejects.toThrow();
+    expect(h.fake.posts).toHaveLength(0);
   });
 });
