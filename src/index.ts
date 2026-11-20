@@ -11,6 +11,7 @@ import { createSparkleCommand } from './commands/sparkle.js';
 import { createSparklesCommand } from './commands/sparkles.js';
 import { createHelpCommand } from './commands/help.js';
 import { createHealthServer } from './health.js';
+import { emojiBurst } from './framework/safe.js';
 import { createShutdownHandler } from './shutdown.js';
 
 const log = (...args: unknown[]) => console.log(new Date().toISOString(), ...args);
@@ -82,6 +83,7 @@ async function main(): Promise<void> {
       },
       partyChannelCooldown: new Cooldown(config.partyChannelCooldownMs),
       partyGiverCooldown: new Cooldown(config.partyGiverCooldownMs),
+      megaBurst: emojiBurst(config.megaEmoji),
     }),
   );
   registry.register(createSparklesCommand({ currency: config.currency, currencyPlural: config.currencyPlural }));
