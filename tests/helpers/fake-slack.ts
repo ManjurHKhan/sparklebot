@@ -10,6 +10,10 @@ export interface FakeUser {
   is_ultra_restricted?: boolean;
   /** When present (even ''), used as profile.display_name instead of `name`. */
   display_name?: string;
+  is_workflow_bot?: boolean;
+  is_agentforce_bot?: boolean;
+  /** Extra profile fields (e.g. bot_id, is_sidekick_bot). */
+  profile?: Record<string, unknown>;
 }
 
 interface PostedMessage {
@@ -50,10 +54,13 @@ export function makeFakeSlack(opts: {
             is_app_user: u.is_app_user ?? false,
             is_restricted: u.is_restricted ?? false,
             is_ultra_restricted: u.is_ultra_restricted ?? false,
+            ...(u.is_workflow_bot !== undefined && { is_workflow_bot: u.is_workflow_bot }),
+            ...(u.is_agentforce_bot !== undefined && { is_agentforce_bot: u.is_agentforce_bot }),
             real_name: u.name ?? 'Someone',
             profile: {
               display_name: 'display_name' in u ? u.display_name : (u.name ?? 'someone'),
               real_name: u.name ?? 'Someone',
+              ...u.profile,
             },
           },
         };

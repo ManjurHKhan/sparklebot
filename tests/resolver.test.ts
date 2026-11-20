@@ -9,6 +9,19 @@ describe('SlackResolver.resolveUser', () => {
     expect(await r.resolveUser('U0FAKE0001')).toEqual({ id: 'U0FAKE0001', name: 'alice', isBot: false, isGuest: false });
   });
 
+  // Slack documents non-human accounts beyond is_bot/is_app_user, and says Slackbot has is_bot=false.
+  it.each([
+    ['workflow bot', { id: 'U0FAKEWFB1', is_workflow_bot: true }],
+    ['Agentforce bot', { id: 'U0FAKEAFB1', is_agentforce_bot: true }],
+    ['sidekick bot', { id: 'U0FAKESKB1', profile: { is_sidekick_bot: true } }],
+    ['bot profile', { id: 'U0FAKEBPR1', profile: { bot_id: 'B0FAKEBPR1' } }],
+    ['Slackbot', { id: 'USLACKBOT' }],
+  ])('flags a %s as isBot even with is_bot=false', async (_, user) => {
+    const { client } = makeFakeSlack({ users: [user] });
+    const r = new SlackResolver(client as never);
+    expect((await r.resolveUser(user.id))?.isBot).toBe(true);
+  });
+
   it('flags multi-channel and single-channel guests as isGuest', async () => {
     const { client } = makeFakeSlack({
       users: [

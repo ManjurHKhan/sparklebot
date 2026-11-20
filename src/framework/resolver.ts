@@ -30,6 +30,16 @@ export async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T
   }
 }
 
+// Slackbot reports is_bot=false (Slack's user-object docs); its fixed ID is the conventional one.
+const SLACKBOT_ID = 'USLACKBOT';
+
+/** Every documented non-human marker on a user object, not just is_bot. */
+function isNonHuman(u: any): boolean {
+  return u.is_bot === true || u.is_app_user === true || u.is_workflow_bot === true
+    || u.is_agentforce_bot === true || u.profile?.is_sidekick_bot === true
+    || Boolean(u.profile?.bot_id) || u.id === SLACKBOT_ID;
+}
+
 class BoundedCache<V> {
   private map = new Map<string, { v: V; exp: number }>();
   constructor(private readonly max: number, private readonly ttlMs: number) {}
@@ -77,7 +87,7 @@ export class SlackResolver implements ResolverApi {
     const user: User = {
       id: u.id,
       name: u.profile?.display_name || u.profile?.real_name || u.real_name || u.name || u.id,
-      isBot: u.is_bot === true || u.is_app_user === true,
+      isBot: isNonHuman(u),
       isGuest: u.is_restricted === true || u.is_ultra_restricted === true,
     };
     this.userCache.set(id, user);

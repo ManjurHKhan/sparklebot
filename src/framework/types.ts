@@ -10,7 +10,7 @@ export enum AccessLevel {
 export interface User {
   id: string;
   name: string;
-  /** true for is_bot OR is_app_user. In ctx.mentions only our own bot ever has this true. */
+  /** true for any documented non-human account (bots, app users, workflow/Agentforce/sidekick bots, Slackbot). In ctx.mentions only our own bot ever has this true. */
   isBot: boolean;
   /** Multi- or single-channel guest. Optional so test literals compile; the resolver always sets it. */
   isGuest?: boolean;

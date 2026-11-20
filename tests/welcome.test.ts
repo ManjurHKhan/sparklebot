@@ -29,6 +29,7 @@ describe('team_join welcome', () => {
   it.each<[string, FakeUser | null]>([
     ['bot', { id: NEW, is_bot: true }],
     ['app user', { id: NEW, is_app_user: true }],
+    ['workflow bot', { id: NEW, is_workflow_bot: true }],
     ['multi-channel guest', { id: NEW, is_restricted: true }],
     ['single-channel guest', { id: NEW, is_ultra_restricted: true }],
     ['deleted', { id: NEW, deleted: true }],
