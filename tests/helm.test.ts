@@ -61,6 +61,14 @@ describe.skipIf(!helmAvailable())('helm chart single-writer guarantees', () => {
     expect(out).toContain('SPARKLE_MEGA_EMOJI: ":boom:"');
   });
 
+  it('rolls the pod when only the ConfigMap changes', () => {
+    const sum = (args: string[]) => render(args).match(/checksum\/config: (\w+)/)?.[1];
+    const a = sum(['--set', 'sparkle.welcomeChannel=C0FAKE0001']);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(sum(['--set', 'sparkle.welcomeChannel=C0FAKE0001'])).toBe(a);
+    expect(sum(['--set', 'sparkle.welcomeChannel=C0FAKE0002'])).not.toBe(a);
+  });
+
   it('defaults leave every new feature off', () => {
     const out = render();
     expect(out).toContain('SPARKLE_WELCOME_CHANNEL: ""');
