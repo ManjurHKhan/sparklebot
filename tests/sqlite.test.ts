@@ -20,6 +20,21 @@ describe('sqlite store', () => {
   beforeEach(() => { store = createSqliteStore(':memory:'); });
   afterEach(() => { store.close(); });
 
+  it('markWelcomed claims a user exactly once', () => {
+    expect(store.markWelcomed('U0FAKE0005')).toBe(true);
+    expect(store.markWelcomed('U0FAKE0005')).toBe(false);
+    expect(store.markWelcomed('U0FAKE0006')).toBe(true);
+  });
+
+  it('hasGivenToOthers ignores self rows and counts gives to others', () => {
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(false);
+    store.insertSparkles([row({ receiverId: 'U0FAKE0001' })]); // self row (giver = receiver)
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(false);
+    store.insertSparkles([row()]); // to someone else
+    expect(store.hasGivenToOthers('U0FAKE0001')).toBe(true);
+    expect(store.hasGivenToOthers('U0FAKE0002')).toBe(false); // receiving is not giving
+  });
+
   it('inserts and counts sparkles', () => {
     store.insertSparkles([row()]);
     expect(store.getTotalReceived('U0FAKE0002')).toBe(1);

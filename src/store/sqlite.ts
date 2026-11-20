@@ -28,6 +28,11 @@ const SCHEMA = `
     PRIMARY KEY (channel_id, ts)
   );
 
+  CREATE TABLE IF NOT EXISTS welcomed_users (
+    user_id TEXT PRIMARY KEY,
+    welcomed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE INDEX IF NOT EXISTS idx_sparkles_receiver ON sparkles(receiver_id);
   CREATE INDEX IF NOT EXISTS idx_sparkles_channel ON sparkles(channel_id);
   CREATE INDEX IF NOT EXISTS idx_sparkles_created ON sparkles(created_at);
@@ -73,6 +78,8 @@ export function createSqliteStore(dbPath: string): Store {
   // Redelivery happens within seconds-to-minutes; a day of retention is generous, and
   // pruning per claim keeps the table bounded without a scheduler (write volume is tiny).
   const pruneProcessedStmt = db.prepare(`DELETE FROM processed_messages WHERE created_at < datetime('now', '-1 day')`);
+  const welcomeStmt = db.prepare(`INSERT OR IGNORE INTO welcomed_users (user_id) VALUES (?)`);
+  const givenToOthersStmt = db.prepare(`SELECT 1 FROM sparkles WHERE giver_id = ? AND receiver_id != ? LIMIT 1`);
   const getSelfStmt = db.prepare(`SELECT attempts FROM self_sparkle_attempts WHERE user_id = ?`);
   const insertSelfStmt = db.prepare(`
     INSERT INTO self_sparkle_attempts (user_id, succeeded, attempts, last_attempt)
@@ -112,6 +119,12 @@ export function createSqliteStore(dbPath: string): Store {
     markProcessed(channelId: string, ts: string): boolean {
       pruneProcessedStmt.run();
       return claimStmt.run(channelId, ts).changes === 1;
+    },
+    markWelcomed(userId: string): boolean {
+      return welcomeStmt.run(userId).changes === 1;
+    },
+    hasGivenToOthers(userId: string): boolean {
+      return givenToOthersStmt.get(userId, userId) !== undefined;
     },
     healthCheck(): boolean {
       try {

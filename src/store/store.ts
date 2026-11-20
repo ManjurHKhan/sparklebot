@@ -28,6 +28,10 @@ export interface Store {
    * guards against Bolt redelivery (slow ack, Socket Mode reconnect replay).
    */
   markProcessed(channelId: string, ts: string): boolean;
+  /** Welcome claim: true only the first time a user is claimed (guards team_join redelivery). */
+  markWelcomed(userId: string): boolean;
+  /** True once the user has given a sparkle to someone other than themselves. */
+  hasGivenToOthers(userId: string): boolean;
   /** SELECT 1 — used by the health probe. */
   healthCheck(): boolean;
   close(): void;
