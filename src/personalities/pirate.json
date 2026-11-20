@@ -37,7 +37,7 @@
   ],
   "welcomeDM": [
     "🏴‍☠️ Ahoy {user}, welcome aboard! I be Sparklebot, keeper of the {currency} treasure. Ye already have one from me!",
-    "⚓ Welcome to the crew, {user}! I count the {currency} me hearties give each other. Here be the lay of the ship:",
+    "⚓ Welcome to the crew, {user}! I count the {currencyPlural} me hearties give each other. Here be the lay of the ship:",
     "🦜 Arrr, {user}! Sparklebot here, quartermaster of the {currency} hoard. I've already put one in yer chest!"
   ],
   "firstGiveBonus": [

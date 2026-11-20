@@ -37,7 +37,7 @@
   ],
   "welcomeDM": [
     "Welcome to the team, {user}. I'm Sparklebot, the peer-recognition assistant. A welcome {currency} has been recorded for you.",
-    "Hello {user}, and welcome. I track the {currency} colleagues give one another for good work. You have already received one from me.",
+    "Hello {user}, and welcome. I track the {currencyPlural} colleagues give one another for good work. You have already received one from me.",
     "Welcome, {user}. Sparklebot here. I record recognition between teammates, and your first {currency} is already on file."
   ],
   "firstGiveBonus": [

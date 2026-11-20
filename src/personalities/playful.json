@@ -96,9 +96,9 @@
     "🌟 Look who's here: {mention}! Welcome! I couldn't wait, so your first {currency} is already in the bank ✨"
   ],
   "welcomeDM": [
-    "👋 Hey {user}, welcome to the team! I'm Sparklebot. I keep track of the {currency} people give each other for being awesome, and I already gave you one ✨",
+    "👋 Hey {user}, welcome to the team! I'm Sparklebot. I keep track of the {currencyPlural} people give each other for being awesome, and I already gave you one ✨",
     "🎉 Welcome, {user}! I'm Sparklebot, the team's official hype machine. You've got a {currency} from me already. Here's how the rest works ✨",
-    "✨ Hi {user}! So glad you're here. I'm Sparklebot, and I hand out {currency} when teammates do great things. Yours is already waiting ✨"
+    "✨ Hi {user}! So glad you're here. I'm Sparklebot, and I hand out {currencyPlural} when teammates do great things. Yours is already waiting ✨"
   ],
   "firstGiveBonus": [
     "🎁 {user} just gave their very first {currency}! Generosity looks good on you, so here's one back from me. Now has *{count}* ✨",

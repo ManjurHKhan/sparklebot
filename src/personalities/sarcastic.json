@@ -36,7 +36,7 @@
     "Welcome, {mention}. Here's a {currency}. No speech, I'm a bot of few feelings. But they're all good ones."
   ],
   "welcomeDM": [
-    "Hi {user}. I'm Sparklebot. I count the {currency} people give each other, and I already gave you one. Spend it wisely. Or don't, it's a number.",
+    "Hi {user}. I'm Sparklebot. I count the {currencyPlural} people give each other, and I already gave you one. Spend it wisely. Or don't, it's a number.",
     "Welcome, {user}. I'm the bot that turns appreciation into a leaderboard. You're already on it. Congratulations, sincerely.",
     "Oh good, {user} is here. I'm Sparklebot. I gave you a {currency} before you did anything, which is my favorite kind of generosity."
   ],

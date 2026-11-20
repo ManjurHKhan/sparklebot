@@ -56,6 +56,21 @@ describe('welcome and first-give lines', () => {
     for (const t of json.welcomePublic!) expect((t.match(/\{mention\}/g) ?? []).length, t).toBe(1);
   });
 
+  // An unknown slot renders literally ("{foo}"), so each array may use only the slots its caller passes.
+  const allowed: Record<string, string[]> = {
+    welcomePublic: ['mention', 'currency'],
+    welcomeDM: ['user', 'currency', 'currencyPlural'],
+    firstGiveBonus: ['user', 'count', 'currency'],
+  };
+  it.each(personalities)('%s new lines use only the slots their caller passes', (p) => {
+    const json = JSON.parse(readFileSync(`src/personalities/${p}.json`, 'utf-8')) as Record<string, string[]>;
+    for (const [key, slots] of Object.entries(allowed)) {
+      for (const t of json[key]!) {
+        for (const [, slot] of t.matchAll(/\{(\w+)\}/g)) expect(slots, `${p}.${key}: ${t}`).toContain(slot);
+      }
+    }
+  });
+
   const m = createMessages('playful');
 
   it('welcomeDM escapes the name it is given', () => {
