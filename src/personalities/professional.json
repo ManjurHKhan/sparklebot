@@ -29,5 +29,20 @@
     "Party recognition: {user} just sparkled {count} {people} in {channel}.\n> {recipients}",
     "{user} has distributed {count} {currency} across {channel}. A group acknowledgment is underway.\n> {recipients}",
     "Team recognition in progress: {user} has sparkled {count} {people} in {channel}.\n> {recipients}"
+  ],
+  "welcomePublic": [
+    "Please welcome {mention}, who joined the team today. They have received a welcome {currency}.",
+    "Welcome to the team, {mention}. A welcome {currency} has been recorded for you.",
+    "{mention} has joined the workspace. Welcome aboard. Your first {currency} has been awarded."
+  ],
+  "welcomeDM": [
+    "Welcome to the team, {user}. I'm Sparklebot, the peer-recognition assistant. A welcome {currency} has been recorded for you.",
+    "Hello {user}, and welcome. I track the {currency} colleagues give one another for good work. You have already received one from me.",
+    "Welcome, {user}. Sparklebot here. I record recognition between teammates, and your first {currency} is already on file."
+  ],
+  "firstGiveBonus": [
+    "{user} has given their first {currency}. A reciprocal {currency} has been awarded. Now has *{count}* ✨.",
+    "First recognition given by {user}. Thank you for taking part; a {currency} has been awarded in return. *{count}* ✨.",
+    "{user} recognized a colleague for the first time. A bonus {currency} has been recorded. Now has *{count}* ✨."
   ]
 }

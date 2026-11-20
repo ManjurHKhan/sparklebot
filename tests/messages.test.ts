@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createMessages } from '../src/messages.js';
-import { fmt, isSafe } from '../src/framework/safe.js';
+import { readFileSync } from 'node:fs';
+import { fmt, isSafe, userMention } from '../src/framework/safe.js';
 
 describe('createMessages', () => {
   const m = createMessages('playful');
@@ -38,5 +39,39 @@ describe('createMessages', () => {
         })
       )
     ).toBe(true);
+  });
+});
+
+describe('welcome and first-give lines', () => {
+  const personalities = ['playful', 'professional', 'sarcastic', 'pirate'];
+  const required: Array<[string, string]> = [['welcomePublic', '{mention}'], ['welcomeDM', '{user}'], ['firstGiveBonus', '{user}']];
+
+  it.each(personalities)('%s has every array, non-empty, with its required slot', (p) => {
+    const json = JSON.parse(readFileSync(`src/personalities/${p}.json`, 'utf-8')) as Record<string, string[]>;
+    for (const [key, slot] of required) {
+      expect(json[key], `${p}.${key}`).toBeInstanceOf(Array);
+      expect(json[key]!.length, `${p}.${key}`).toBeGreaterThan(0);
+      for (const t of json[key]!) expect(t, `${p}.${key}`).toContain(slot);
+    }
+    for (const t of json.welcomePublic!) expect((t.match(/\{mention\}/g) ?? []).length, t).toBe(1);
+  });
+
+  const m = createMessages('playful');
+
+  it('welcomeDM escapes the name it is given', () => {
+    const out = m.welcomeDM({ user: '<!channel>' });
+    expect(out.text).not.toContain('<!channel>');
+    expect(out.text).toContain('&lt;!channel&gt;');
+  });
+
+  it('firstGiveBonus escapes the name it is given', () => {
+    const out = m.firstGiveBonus({ user: '<@U0FAKE0001>', count: 1, currency: 'sparkle' });
+    expect(out.text).not.toContain('<@');
+    expect(out.text).toContain('&lt;@U0FAKE0001&gt;');
+  });
+
+  it('welcomePublic keeps a SafeText mention intact', () => {
+    const out = m.welcomePublic({ mention: userMention('U0FAKE0010'), currency: 'sparkle' });
+    expect(out.text).toContain('<@U0FAKE0010>');
   });
 });

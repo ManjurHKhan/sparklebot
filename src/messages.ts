@@ -11,6 +11,9 @@ interface Personality {
   botSparkleQuips: string[];
   firstSparkleCelebration: string[];
   partyAnnouncements: string[];
+  welcomePublic: string[];
+  welcomeDM: string[];
+  firstGiveBonus: string[];
 }
 
 function loadPersonality(name: string): Personality {
@@ -51,6 +54,9 @@ export interface Messages {
   botSparkleQuip(vars: MessageVars): SafeText;
   firstSparkleCelebration(vars: MessageVars): SafeText;
   partyAnnouncement(vars: MessageVars): SafeText;
+  welcomePublic(vars: MessageVars): SafeText;
+  welcomeDM(vars: MessageVars): SafeText;
+  firstGiveBonus(vars: MessageVars): SafeText;
 }
 
 export function createMessages(personalityName: string): Messages {
@@ -61,5 +67,8 @@ export function createMessages(personalityName: string): Messages {
     botSparkleQuip: (v) => substitute(pickRandom(p.botSparkleQuips), v),
     firstSparkleCelebration: (v) => substitute(pickRandom(p.firstSparkleCelebration), v),
     partyAnnouncement: (v) => substitute(pickRandom(p.partyAnnouncements), v),
+    welcomePublic: (v) => substitute(pickRandom(p.welcomePublic), v),
+    welcomeDM: (v) => substitute(pickRandom(p.welcomeDM), v),
+    firstGiveBonus: (v) => substitute(pickRandom(p.firstGiveBonus), v),
   };
 }

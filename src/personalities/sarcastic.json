@@ -29,5 +29,20 @@
     "Mass recognition event: {user} just sparkled {count} {people} in {channel}. Allegedly celebrating.\n> {recipients}",
     "Gather round, {channel}. {user} sparkled {count} {people}. We're calling it a party.\n> {recipients}",
     "{user} dropped {count} {currency} on {channel}. Party's here. Try to look surprised.\n> {recipients}"
+  ],
+  "welcomePublic": [
+    "Oh look, a new person. Welcome, {mention}. I already gave you a {currency}, so the bar is officially on the floor.",
+    "{mention} joined. Everyone act normal. They get a free {currency} for showing up, which is more than most of you managed.",
+    "Welcome, {mention}. Here's a {currency} for the incredible achievement of accepting an invite."
+  ],
+  "welcomeDM": [
+    "Hi {user}. I'm Sparklebot. I count the {currency} people give each other. You already have one from me. Try not to let it go to your head.",
+    "Welcome, {user}. I'm the bot that turns appreciation into a leaderboard. You're on it already, thanks to my generosity.",
+    "Oh good, {user} is here. I'm Sparklebot. I gave you a {currency} before you did anything. Don't make me regret it."
+  ],
+  "firstGiveBonus": [
+    "{user} gave their first {currency}. Look at that, actual teamwork. Here's one back. *{count}* ✨.",
+    "Wow, {user} sparkled someone. I'm told this deserves a reward, so here's a {currency}. *{count}* ✨.",
+    "{user} has discovered generosity. I've been instructed to encourage this. One {currency}. *{count}* ✨."
   ]
 }
