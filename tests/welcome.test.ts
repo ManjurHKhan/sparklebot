@@ -39,7 +39,7 @@ describe('team_join welcome', () => {
     await h.join();
     expect(h.fake.posts).toHaveLength(0);
     expect(h.rows()).toHaveLength(0);
-    expect(h.store.markWelcomed(NEW)).toBe(true);
+    expect(h.store.claimWelcome({ giverId: BOT, giverName: 'x', receiverId: NEW, receiverName: 'x', reason: 'welcome', channelId: WELCOME, channelName: 'general' })).toBe(true);
   });
 
   it('a repeated event welcomes once', async () => {

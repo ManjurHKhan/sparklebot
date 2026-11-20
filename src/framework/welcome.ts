@@ -63,14 +63,15 @@ export function createWelcomeHandler(deps: WelcomeDeps) {
     }
     const channel = config.welcomeChannel;
     const channelName = await resolver.channelName(channel);
-    // Claim and record with no await between them: a claimed member always has their sparkle.
-    if (!store.markWelcomed(user.id)) return; // Slack redelivered the event
-    store.insertSparkles([{
+    // One transaction: a claimed member always has their sparkle. Posts are not re-sent if
+    // they fail after this (withRetry covers transient errors), same as every sparkle post.
+    const claimed = store.claimWelcome({
       giverId: botUserId, giverName: 'Sparklebot',
       receiverId: user.id, receiverName: user.name,
       reason: 'welcome',
       channelId: channel, channelName,
-    }]);
+    });
+    if (!claimed) return; // Slack redelivered the event
 
     const publicBranch = async () => {
       await post(channel, messages.welcomePublic({ mention: userMention(user.id), currency: config.currency }));

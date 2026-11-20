@@ -79,6 +79,11 @@ export function createSqliteStore(dbPath: string): Store {
   // pruning per claim keeps the table bounded without a scheduler (write volume is tiny).
   const pruneProcessedStmt = db.prepare(`DELETE FROM processed_messages WHERE created_at < datetime('now', '-1 day')`);
   const welcomeStmt = db.prepare(`INSERT OR IGNORE INTO welcomed_users (user_id) VALUES (?)`);
+  const claimWelcome = db.transaction((row: SparkleRow): boolean => {
+    if (welcomeStmt.run(row.receiverId).changes !== 1) return false;
+    insertStmt.run(row);
+    return true;
+  });
   const givenToOthersStmt = db.prepare(`SELECT 1 FROM sparkles WHERE giver_id = ? AND receiver_id != ? LIMIT 1`);
   const getSelfStmt = db.prepare(`SELECT attempts FROM self_sparkle_attempts WHERE user_id = ?`);
   const insertSelfStmt = db.prepare(`
@@ -120,8 +125,8 @@ export function createSqliteStore(dbPath: string): Store {
       pruneProcessedStmt.run();
       return claimStmt.run(channelId, ts).changes === 1;
     },
-    markWelcomed(userId: string): boolean {
-      return welcomeStmt.run(userId).changes === 1;
+    claimWelcome(row: SparkleRow): boolean {
+      return claimWelcome(row);
     },
     hasGivenToOthers(userId: string): boolean {
       return givenToOthersStmt.get(userId, userId) !== undefined;
