@@ -69,6 +69,12 @@ describe('loadConfig: welcome, tour, mega emoji, suggest', () => {
     expect(c.configWarnings).toEqual([]);
   });
 
+  it('accepts a legacy private channel ID (G prefix) for the welcome channel', () => {
+    const c = loadConfig({ SPARKLE_WELCOME_CHANNEL: 'G0FAKE0001' });
+    expect(c.welcomeChannel).toBe('G0FAKE0001');
+    expect(c.configWarnings).toEqual([]);
+  });
+
   it('invalid welcome channel turns welcome off with a warning', () => {
     const c = loadConfig({ SPARKLE_WELCOME_CHANNEL: '#general' });
     expect(c.welcomeChannel).toBeUndefined();

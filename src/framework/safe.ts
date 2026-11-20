@@ -125,7 +125,7 @@ export function joinSafe(parts: SafeText[], sep: string): SafeText {
 // The only ways to emit a ping, a channel link or raw shortcodes. Each pattern excludes every
 // markup delimiter (< > | & ! whitespace), so a match can't break out of its token.
 export const USER_ID_RE = /^[UW][A-Z0-9]{8,}$/;
-export const CHANNEL_ID_RE = /^C[A-Z0-9]{8,}$/;
+export const CHANNEL_ID_RE = /^[CG][A-Z0-9]{8,}$/; // G: legacy private channels
 export const EMOJI_BURST_RE = /^(?::[a-z0-9_+-]+:){1,23}$/;
 const MAX_BURST_LEN = 200;
 
