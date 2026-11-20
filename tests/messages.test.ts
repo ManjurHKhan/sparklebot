@@ -44,7 +44,9 @@ describe('createMessages', () => {
 
 describe('welcome and first-give lines', () => {
   const personalities = ['playful', 'professional', 'sarcastic', 'pirate'];
-  const required: Array<[string, string]> = [['welcomePublic', '{mention}'], ['welcomeDM', '{user}'], ['firstGiveBonus', '{user}']];
+  const required: Array<[string, string]> = [
+    ['welcomePublic', '{mention}'], ['welcomeDM', '{user}'], ['firstGiveBonus', '{user}'], ['agentNudge', '{user}'],
+  ];
 
   it.each(personalities)('%s has every array, non-empty, with its required slot', (p) => {
     const json = JSON.parse(readFileSync(`src/personalities/${p}.json`, 'utf-8')) as Record<string, string[]>;
@@ -61,6 +63,7 @@ describe('welcome and first-give lines', () => {
     welcomePublic: ['mention', 'currency'],
     welcomeDM: ['user', 'currency', 'currencyPlural'],
     firstGiveBonus: ['user', 'count', 'currency'],
+    agentNudge: ['user'],
   };
   it.each(personalities)('%s new lines use only the slots their caller passes', (p) => {
     const json = JSON.parse(readFileSync(`src/personalities/${p}.json`, 'utf-8')) as Record<string, string[]>;
@@ -83,6 +86,12 @@ describe('welcome and first-give lines', () => {
     const out = m.firstGiveBonus({ user: '<@U0FAKE0001>', count: 1, currency: 'sparkle' });
     expect(out.text).not.toContain('<@');
     expect(out.text).toContain('&lt;@U0FAKE0001&gt;');
+  });
+
+  it('agentNudge escapes the name it is given', () => {
+    const out = m.agentNudge({ user: '<!here>' });
+    expect(out.text).not.toContain('<!here>');
+    expect(out.text).toContain('&lt;!here&gt;');
   });
 
   it('welcomePublic keeps a SafeText mention intact', () => {

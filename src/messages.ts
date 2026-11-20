@@ -14,6 +14,7 @@ interface Personality {
   welcomePublic: string[];
   welcomeDM: string[];
   firstGiveBonus: string[];
+  agentNudge: string[];
 }
 
 function loadPersonality(name: string): Personality {
@@ -57,6 +58,7 @@ export interface Messages {
   welcomePublic(vars: MessageVars): SafeText;
   welcomeDM(vars: MessageVars): SafeText;
   firstGiveBonus(vars: MessageVars): SafeText;
+  agentNudge(vars: MessageVars): SafeText;
 }
 
 export function createMessages(personalityName: string): Messages {
@@ -70,5 +72,6 @@ export function createMessages(personalityName: string): Messages {
     welcomePublic: (v) => substitute(pickRandom(p.welcomePublic), v),
     welcomeDM: (v) => substitute(pickRandom(p.welcomeDM), v),
     firstGiveBonus: (v) => substitute(pickRandom(p.firstGiveBonus), v),
+    agentNudge: (v) => substitute(pickRandom(p.agentNudge), v),
   };
 }

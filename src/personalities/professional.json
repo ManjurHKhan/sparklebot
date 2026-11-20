@@ -44,5 +44,9 @@
     "{user} has given their first {currency}. A reciprocal {currency} has been awarded. Now has *{count}* ✨.",
     "First recognition given by {user}. Thank you for taking part; a {currency} has been awarded in return. *{count}* ✨.",
     "{user} recognized a colleague for the first time. A bonus {currency} has been recorded. Now has *{count}* ✨."
+  ],
+  "agentNudge": [
+    "Note: this recognition was sent through an AI agent. {user}, a personal message carries more weight.",
+    "Recorded. {user}, colleagues appreciate recognition written personally rather than through an agent."
   ]
 }

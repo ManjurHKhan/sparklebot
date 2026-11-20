@@ -373,3 +373,53 @@ describe('first-give bonus', () => {
     expect(later.replies[0]).toContain('now has *2*');
   });
 });
+
+describe('agent nudge', () => {
+  it('a sparkle sent through an agent gets one nudge after the awards', async () => {
+    const h = makeCtx({ mentions: [BOB, CAROL], viaAgent: true });
+    seedPriorGive(h.store);
+    seed(h.store, BOB.id, 1);
+    seed(h.store, CAROL.id, 1);
+    await cmd().run(h.ctx);
+    expect(h.replies).toHaveLength(3); // 2 awards + nudge (no bonus, no milestone)
+    expect(h.replies[2]).toContain('*alice*');
+  });
+
+  it('the nudge comes before the first-give bonus and the explosion', async () => {
+    const h = makeCtx({ mentions: [BOB], viaAgent: true });
+    await cmd().run(h.ctx);
+    expect(h.replies).toHaveLength(4); // award, nudge, bonus, explosion
+    expect(h.replies[3]).toBe(':boom:');
+  });
+
+  it('no nudge when the person typed it', async () => {
+    const h = makeCtx({ mentions: [BOB] });
+    seedPriorGive(h.store);
+    seed(h.store, BOB.id, 1);
+    await cmd().run(h.ctx);
+    expect(h.replies).toHaveLength(1);
+  });
+
+  it('party through an agent nudges once; an all-bot party does not', async () => {
+    const p = partyOf(['U0FAKE0002', 'U0FAKE0003']);
+    p.ctx.viaAgent = true;
+    seedPriorGive(p.store);
+    seed(p.store, 'U0FAKE0002', 1);
+    seed(p.store, 'U0FAKE0003', 1);
+    await cmd().run(p.ctx);
+    expect(p.replies).toHaveLength(2); // announcement + nudge
+    const bots = partyOf(['U0FAKE0002'], true);
+    bots.ctx.viaAgent = true;
+    await cmd().run(bots.ctx);
+    expect(bots.replies).toHaveLength(1); // announcement only
+  });
+
+  it('no nudge on the self-sparkle path or the bot quip', async () => {
+    const self = makeCtx({ mentions: [{ ...GIVER }], viaAgent: true });
+    await cmd().run(self.ctx);
+    const quip = makeCtx({ mentions: [OWN_BOT], viaAgent: true });
+    await cmd().run(quip.ctx);
+    expect(self.replies).toHaveLength(1);
+    expect(quip.replies).toHaveLength(1);
+  });
+});

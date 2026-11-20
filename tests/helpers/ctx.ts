@@ -20,6 +20,7 @@ export function makeCtx(over: Partial<Context> = {}) {
     giver: GIVER,
     channel: { id: 'C0FAKE0001', name: 'general' },
     botUserId: BOT,
+    viaAgent: false,
     reply: vi.fn(async (m: SafeText) => { replies.push(m.text); }),
     replyEphemeral: vi.fn(async (m: SafeText) => { ephemerals.push(m.text); }),
     replyDM: vi.fn(async (m: SafeText) => { dms.push(m.text); }),

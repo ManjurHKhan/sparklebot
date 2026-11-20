@@ -105,5 +105,10 @@
     "🔁 Sparkle karma! {user} gave their first {currency}, so I gave them one too. Now has *{count}* ✨",
     "🥇 First give unlocked for {user}! Here's a {currency} from me for spreading the love. Now has *{count}* ✨",
     "💝 Awww, {user} just sparkled someone for the first time! That deserves a {currency} of its own. Now has *{count}* ✨"
+  ],
+  "agentNudge": [
+    "🤖 Psst, {user}... this would've been even sweeter if you'd typed it yourself instead of sending an agent :p",
+    "📨 Sparkle delivered by robot courier! Next time, {user}, try the hand-typed kind :p",
+    "🤖 {user} had an agent say thanks for them. Still counts! But we noticed :p"
   ]
 }

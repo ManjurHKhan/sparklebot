@@ -35,6 +35,8 @@ export interface Context {
   giver: User;
   channel: { id: string; name: string };
   botUserId: string;
+  /** The human giver sent this through an app (an AI agent posting on their behalf). */
+  viaAgent: boolean;
   reply(msg: SafeText): Promise<void>;
   replyEphemeral(msg: SafeText): Promise<void>;
   /** DM the giver; falls back to ephemeral channel reply if the DM fails. */

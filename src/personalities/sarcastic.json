@@ -44,5 +44,9 @@
     "{user} gave their first {currency}. Look at that, actual teamwork. Here's one back. *{count}* ✨.",
     "Wow, {user} sparkled someone. I'm told this deserves a reward, so here's a {currency}. *{count}* ✨.",
     "{user} has discovered generosity. I've been instructed to encourage this. One {currency}. *{count}* ✨."
+  ],
+  "agentNudge": [
+    "Ah, {user} had a robot say thank you for them. Heartfelt. Maybe type it yourself next time :p",
+    "{user} delegated their appreciation to an AI. Peak efficiency. It still counts, somehow :p"
   ]
 }

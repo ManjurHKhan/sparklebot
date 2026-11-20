@@ -44,5 +44,9 @@
     "🍻 {user} shared their first {currency}! A true pirate shares the plunder, so here be one back! *{count}* ✨!",
     "⚓ Generous sailor! {user} gave their first {currency}, and the captain rewards 'em with another! *{count}* ✨!",
     "🏴‍☠️ {user} be sharin' the treasure! For yer first give, a {currency} from the ship's chest! *{count}* ✨!"
+  ],
+  "agentNudge": [
+    "🦜 Arrr, {user} sent a parrot to deliver the treasure! A true pirate says it with their own mouth next time :p",
+    "⚓ {user} had a robot deckhand hand out the plunder! It counts, matey, but next time say it yerself :p"
   ]
 }

@@ -60,7 +60,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
    * missed because another command moved a total while this run was posting).
    */
   function recordAwards(ctx: Context, recipients: User[], reason: string | null) {
-    if (recipients.length === 0) return { totals: new Map<string, number>(), bonusTotal: 0, celebrate: false };
+    if (recipients.length === 0) return { awarded: false, bonusTotal: 0, celebrate: false, totals: new Map<string, number>() };
     const bonus = !ctx.store.hasGivenToOthers(ctx.giver.id);
     const rows: SparkleRow[] = recipients.map((r) => ({
       giverId: ctx.giver.id, giverName: ctx.giver.name,
@@ -80,11 +80,12 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
     const totals = new Map(recipients.map((r) => [r.id, ctx.store.getTotalReceived(r.id)]));
     const bonusTotal = bonus ? ctx.store.getTotalReceived(ctx.giver.id) : 0;
     const celebrate = bonus || [...totals.values()].some(isMilestone);
-    return { totals, bonusTotal, celebrate };
+    return { awarded: true, bonusTotal, celebrate, totals };
   }
 
-  /** Bonus line (if earned), then at most one explosion. */
-  async function finishAwards(ctx: Context, bonusTotal: number, celebrate: boolean): Promise<void> {
+  /** After the award messages: agent nudge, bonus line (if earned), then at most one explosion. */
+  async function finishAwards(ctx: Context, { awarded, bonusTotal, celebrate }: ReturnType<typeof recordAwards>): Promise<void> {
+    if (awarded && ctx.viaAgent) await ctx.reply(messages.agentNudge({ user: fmt`*${ctx.giver.name}*` }));
     if (bonusTotal > 0) {
       await ctx.reply(messages.firstGiveBonus({ user: fmt`*${ctx.giver.name}*`, count: bonusTotal, currency: config.currency }));
     }
@@ -93,7 +94,8 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
 
   async function awardHumans(ctx: Context, targets: User[]): Promise<void> {
     const firstFlags = new Map(targets.map((t) => [t.id, ctx.store.isFirstSparkle(t.id)]));
-    const { totals, bonusTotal, celebrate } = recordAwards(ctx, targets, normalizeReason(ctx.args) || null);
+    const rec = recordAwards(ctx, targets, normalizeReason(ctx.args) || null);
+    const { totals } = rec;
 
     for (const t of targets) {
       const total = totals.get(t.id)!;
@@ -114,7 +116,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
         await ctx.reply(formatSparkle(ctx.giver, t, ctx.args, total, config));
       }
     }
-    await finishAwards(ctx, bonusTotal, celebrate);
+    await finishAwards(ctx, rec);
   }
 
   async function runSelf(ctx: Context): Promise<void> {
@@ -177,7 +179,8 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
     }
 
     // After every await above: the check, insert and reads must stay in one synchronous block.
-    const { totals, bonusTotal, celebrate } = recordAwards(ctx, recipients, 'party');
+    const rec = recordAwards(ctx, recipients, 'party');
+    const { totals } = rec;
 
     const lines = recipients.map((r) => {
       const total = totals.get(r.id)!;
@@ -195,7 +198,7 @@ export function createSparkleCommand(deps: SparkleDeps): Command {
         people,
       }),
     );
-    await finishAwards(ctx, bonusTotal, celebrate);
+    await finishAwards(ctx, rec);
   }
 
   return {

@@ -25,6 +25,7 @@ Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and Gi
 - **First sparkle celebration** — Special fanfare with emoji and count when someone receives their very first sparkle
 - **Mega explosion** — A big emoji-only burst on milestones: first sparkle received, first sparkle given, joining, and reaching 5/10/25/50/100. At most one per command
 - **First-give bonus** — The first time someone sparkles a teammate, Sparklebot gives them one back
+- **Agent nudge** — A sparkle someone sends through an AI agent (posted on their behalf) still counts, with a playful nudge to type it themselves next time. An agent posting as itself can't give sparkles
 - **New member welcome** — When `SPARKLE_WELCOME_CHANNEL` is set, full members (not guests or bots) who join get a welcome sparkle, a public @-mention welcome, and a DM with a channel tour and how-to
 - **Party mode details** — Party sparkles show each recipient's name, total count, and tier emoji on separate lines
 - **Bold formatting** — Names and counts are bold in all messages for readability
@@ -328,7 +329,7 @@ sparklebot/
       professional.json
       sarcastic.json
       pirate.json
-  tests/                  -- Vitest test files (202 tests)
+  tests/                  -- Vitest test files (220 tests)
   helm/sparklebot/        -- Helm chart
   Dockerfile              -- Multi-stage Node 24 alpine build
 ```
