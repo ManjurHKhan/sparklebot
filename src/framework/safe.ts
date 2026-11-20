@@ -121,3 +121,31 @@ export function fmt(
 export function joinSafe(parts: SafeText[], sep: string): SafeText {
   return create(parts.map((p) => p.text).join(sep));
 }
+
+// The only ways to emit a ping, a channel link or raw shortcodes. Each pattern excludes every
+// markup delimiter (< > | & ! whitespace), so a match can't break out of its token.
+export const USER_ID_RE = /^[UW][A-Z0-9]{8,}$/;
+export const CHANNEL_ID_RE = /^C[A-Z0-9]{8,}$/;
+export const EMOJI_BURST_RE = /^(?::[a-z0-9_+-]+:){1,23}$/;
+const MAX_BURST_LEN = 200;
+
+function checked(re: RegExp, s: string, what: string): string {
+  if (!re.test(s)) throw new Error(`invalid ${what}`);
+  return s;
+}
+
+/** `<@ID>` for an ID that came from Slack's API or validated config. */
+export function userMention(id: string): SafeText {
+  return create(`<@${checked(USER_ID_RE, id, 'user id')}>`);
+}
+
+/** `<#ID>` for an ID that came from Slack's API or validated config. */
+export function channelLink(id: string): SafeText {
+  return create(`<#${checked(CHANNEL_ID_RE, id, 'channel id')}>`);
+}
+
+/** Shortcodes verbatim. fmt would ZWSP the `_` in `:sparkle_explosion:` and break it. */
+export function emojiBurst(s: string): SafeText {
+  if (s.length > MAX_BURST_LEN) throw new Error('emoji burst too long');
+  return create(checked(EMOJI_BURST_RE, s, 'emoji burst'));
+}
