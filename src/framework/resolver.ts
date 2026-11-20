@@ -36,11 +36,15 @@ const SLACKBOT_ID = 'USLACKBOT';
 // Slack documents these at the top level, on the profile, or both. Check both placements for
 // every flag: a placement Slack doesn't document today costs nothing to check.
 const NON_HUMAN_FLAGS = ['is_bot', 'is_app_user', 'is_workflow_bot', 'is_agentforce_bot', 'is_sidekick_bot'];
+const GUEST_FLAGS = ['is_restricted', 'is_ultra_restricted'];
+
+function anyFlag(u: any, flags: string[]): boolean {
+  return flags.some((f) => u[f] === true || u.profile?.[f] === true);
+}
 
 /** Every documented non-human marker on a user object, not just is_bot. */
 function isNonHuman(u: any): boolean {
-  return NON_HUMAN_FLAGS.some((f) => u[f] === true || u.profile?.[f] === true)
-    || Boolean(u.profile?.bot_id) || u.id === SLACKBOT_ID;
+  return anyFlag(u, NON_HUMAN_FLAGS) || Boolean(u.profile?.bot_id) || u.id === SLACKBOT_ID;
 }
 
 class BoundedCache<V> {
@@ -91,7 +95,7 @@ export class SlackResolver implements ResolverApi {
       id: u.id,
       name: u.profile?.display_name || u.profile?.real_name || u.real_name || u.name || u.id,
       isBot: isNonHuman(u),
-      isGuest: u.is_restricted === true || u.is_ultra_restricted === true,
+      isGuest: anyFlag(u, GUEST_FLAGS),
     };
     this.userCache.set(id, user);
     return user;

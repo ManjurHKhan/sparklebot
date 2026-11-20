@@ -34,6 +34,8 @@ describe('team_join welcome', () => {
     ['Sidekick bot (top-level flag)', { id: NEW, is_sidekick_bot: true }],
     ['multi-channel guest', { id: NEW, is_restricted: true }],
     ['single-channel guest', { id: NEW, is_ultra_restricted: true }],
+    ['multi-channel guest (profile flag)', { id: NEW, profile: { is_restricted: true } }],
+    ['single-channel guest (profile flag)', { id: NEW, profile: { is_ultra_restricted: true } }],
     ['deleted', { id: NEW, deleted: true }],
     ['unknown', null],
   ])('%s: no posts, no row, not claimed', async (_, user) => {

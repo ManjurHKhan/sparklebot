@@ -329,7 +329,7 @@ sparklebot/
       professional.json
       sarcastic.json
       pirate.json
-  tests/                  -- Vitest test files (240 tests)
+  tests/                  -- Vitest test files (242 tests)
   helm/sparklebot/        -- Helm chart
   Dockerfile              -- Multi-stage Node 24 alpine build
 ```

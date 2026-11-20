@@ -30,11 +30,14 @@ describe('SlackResolver.resolveUser', () => {
       users: [
         { id: 'U0FAKEGST1', is_restricted: true },
         { id: 'U0FAKEGST2', is_ultra_restricted: true },
+        { id: 'U0FAKEGST3', profile: { is_restricted: true } }, // Slack also documents profile copies
+        { id: 'U0FAKEGST4', profile: { is_ultra_restricted: true } },
       ],
     });
     const r = new SlackResolver(client as never);
-    expect((await r.resolveUser('U0FAKEGST1'))?.isGuest).toBe(true);
-    expect((await r.resolveUser('U0FAKEGST2'))?.isGuest).toBe(true);
+    for (const id of ['U0FAKEGST1', 'U0FAKEGST2', 'U0FAKEGST3', 'U0FAKEGST4']) {
+      expect((await r.resolveUser(id))?.isGuest, id).toBe(true);
+    }
   });
 
   it('returns null for deleted users', async () => {
