@@ -38,6 +38,13 @@ describe('.suggest', () => {
     expect(h.ownerDms[0]).not.toContain('…');
   });
 
+  it('an idea that grows past 256 under normalization is rejected, not truncated', async () => {
+    const { cmd, h } = setup('\uFDFA'.repeat(20)); // 20 chars, 360 after NFKC
+    await cmd.run(h.ctx);
+    expect(h.ownerDms).toHaveLength(0);
+    expect(h.ephemerals[0]).toContain('256');
+  });
+
   it('second idea within 600 s blocked, allowed after', async () => {
     const { cmd, h, now } = setup('one');
     await cmd.run(h.ctx);

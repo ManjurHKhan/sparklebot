@@ -20,7 +20,8 @@ export function createSuggestCommand(deps: { cooldown: Cooldown }): Command {
         await ctx.replyEphemeral(trusted('Usage: `.suggest [idea]` — tell me what Sparklebot should do next.'));
         return;
       }
-      if (idea.length > MAX_IDEA) {
+      // Measured after NFKC, as fmt measures it: a ligature can expand to 18 characters.
+      if (idea.normalize('NFKC').length > MAX_IDEA) {
         await ctx.replyEphemeral(trusted(`That's a lot of idea. Keep it to ${MAX_IDEA} characters.`));
         return;
       }
