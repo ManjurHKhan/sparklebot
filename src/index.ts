@@ -10,6 +10,8 @@ import { withRetry } from './framework/resolver.js';
 import { createSparkleCommand } from './commands/sparkle.js';
 import { createSparklesCommand } from './commands/sparkles.js';
 import { createHelpCommand } from './commands/help.js';
+import { createSuggestCommand } from './commands/suggest.js';
+import { createWelcomeHandler } from './framework/welcome.js';
 import { createHealthServer } from './health.js';
 import { emojiBurst } from './framework/safe.js';
 import { createShutdownHandler } from './shutdown.js';
@@ -29,6 +31,8 @@ if (!config.slackBotToken || !config.slackAppToken) {
   console.error('SLACK_BOT_TOKEN and SLACK_APP_TOKEN are required.');
   process.exit(1);
 }
+
+for (const w of config.configWarnings) log(`[config] ${w}`);
 
 const store = createSqliteStore(config.dbPath);
 
@@ -70,6 +74,7 @@ async function main(): Promise<void> {
   const rateLimiter = new SlidingWindow(config.rateLimit.limit, config.rateLimit.windowMs);
   const commandLimiter = new SlidingWindow(config.commandLimit.limit, config.commandLimit.windowMs);
   const messages = createMessages(config.personality);
+  const megaBurst = emojiBurst(config.megaEmoji);
 
   const registry = new Registry();
   registry.register(
@@ -83,10 +88,11 @@ async function main(): Promise<void> {
       },
       partyChannelCooldown: new Cooldown(config.partyChannelCooldownMs),
       partyGiverCooldown: new Cooldown(config.partyGiverCooldownMs),
-      megaBurst: emojiBurst(config.megaEmoji),
+      megaBurst,
     }),
   );
   registry.register(createSparklesCommand({ currency: config.currency, currencyPlural: config.currencyPlural }));
+  if (config.suggestTo) registry.register(createSuggestCommand({ cooldown: new Cooldown(600_000) }));
   registry.register(createHelpCommand(registry));
 
   const dispatch = createDispatcher({
@@ -98,6 +104,7 @@ async function main(): Promise<void> {
     botUserId,
     client: app.client as never,
     log,
+    ownerId: config.suggestTo,
   });
 
   app.message(async ({ message }) => {
@@ -108,6 +115,33 @@ async function main(): Promise<void> {
       inflight--;
     }
   });
+
+  if (config.welcomeChannel) {
+    const welcome = createWelcomeHandler({
+      client: app.client as never,
+      resolver,
+      store,
+      messages,
+      botUserId,
+      megaBurst,
+      suggestEnabled: !!config.suggestTo,
+      config: {
+        welcomeChannel: config.welcomeChannel,
+        welcomeChannels: config.welcomeChannels,
+        currency: config.currency,
+        currencyPlural: config.currencyPlural,
+      },
+      log,
+    });
+    app.event('team_join', async ({ event }) => {
+      inflight++;
+      try {
+        await welcome(event);
+      } finally {
+        inflight--;
+      }
+    });
+  }
 
   // WS connection state for the health probe (SocketModeClient events).
   let wsConnected = false;

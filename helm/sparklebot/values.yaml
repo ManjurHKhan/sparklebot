@@ -30,6 +30,14 @@ sparkle:
   # Invocation throttle: max command runs per user per window (all commands).
   commandLimit: 20
   commandWindowSeconds: 60
+  # Welcome new members on team_join (needs the team_join bot event). Channel ID; "" = off.
+  welcomeChannel: ""
+  # Channel tour in the welcome DM: up to 15 of {id, about}; about <= 120 chars.
+  welcomeChannels: []
+  # Emoji-only milestone burst: 1-23 :shortcodes:, <= 200 chars. "" = default.
+  megaEmoji: ""
+  # User ID that receives .suggest ideas by DM. "" = .suggest off.
+  suggestTo: ""
 
 podSecurityContext:
   runAsNonRoot: true

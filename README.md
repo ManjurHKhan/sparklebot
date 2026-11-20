@@ -14,6 +14,7 @@ Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and Gi
 - **`.sparkle @user1 @user2 [reason]`** — Sparkle multiple people at once (up to 10 per command, duplicates ignored)
 - **`.sparkle party`** — Sparkle everyone who posted in the channel in the last 30 minutes (up to 10 recipients, subject to cooldowns)
 - **`.sparkles`** — Get the all-time leaderboard sent to you as a DM
+- **`.suggest [idea]`** — Send a feature idea to the bot's owner by DM (when `SPARKLE_SUGGEST_TO` is set; one per person every 10 minutes)
 - **`.help`** — Show available commands
 
 ### Features
@@ -22,6 +23,9 @@ Inspired by [davidcelis/sparkles](https://github.com/davidcelis/sparkles) and Gi
 - **Self-sparkle shame** — Allowed exactly once per user, then blocked with escalating shame messages
 - **Bot sparkle quips** — Sparkling the bot gets a witty response (not recorded as a real sparkle)
 - **First sparkle celebration** — Special fanfare with emoji and count when someone receives their very first sparkle
+- **Mega explosion** — A big emoji-only burst on milestones: first sparkle received, first sparkle given, joining, and reaching 5/10/25/50/100. At most one per command
+- **First-give bonus** — The first time someone sparkles a teammate, Sparklebot gives them one back
+- **New member welcome** — When `SPARKLE_WELCOME_CHANNEL` is set, full members (not guests or bots) who join get a welcome sparkle, a public @-mention welcome, and a DM with a channel tour and how-to
 - **Party mode details** — Party sparkles show each recipient's name, total count, and tier emoji on separate lines
 - **Bold formatting** — Names and counts are bold in all messages for readability
 - **Emoji-rich messages** — Personalities use contextual emoji throughout responses
@@ -85,6 +89,7 @@ interface Context {
   reply(msg): Promise<void>; // Post to channel
   replyEphemeral(...);       // Ephemeral message
   replyDM(...);              // DM with fallback
+  notifyOwner(msg);          // DM the configured owner (false if unset/failed)
   rate.tryConsume(n);        // Rate-limit check
   store: Store;              // DB access
   resolver: ResolverApi;     // User/channel resolution (read-only)
@@ -150,6 +155,7 @@ Go to [api.slack.com/apps](https://api.slack.com/apps) and create a new app from
 **Bot Events** (Event Subscriptions > Subscribe to bot events):
 - `message.channels` — Listen for commands in public channels
 - `message.groups` — Listen for commands in private channels
+- `team_join` — Welcome new members (only needed with `SPARKLE_WELCOME_CHANNEL`; uses `users:read`)
 
 **Install to Workspace** (OAuth & Permissions): Install the app and copy the `SLACK_BOT_TOKEN` (starts with `xoxb-`).
 
@@ -186,6 +192,12 @@ Optional variables:
 | `SPARKLE_CMD_LIMIT` | `20` | Max command invocations per user within the command window (all commands, including non-award) |
 | `SPARKLE_CMD_WINDOW_S` | `60` | Seconds in the command-throttle sliding window |
 | `HEALTH_PORT` | `8080` | Port for the `/healthz` liveness probe |
+| `SPARKLE_WELCOME_CHANNEL` | (off) | Channel ID for the public welcome, e.g. `C0FAKE0001`. Empty = welcome off |
+| `SPARKLE_WELCOME_CHANNELS` | (none) | Channel tour for the welcome DM: JSON array of `{"id","about"}`, up to 15, `about` up to 120 characters |
+| `SPARKLE_MEGA_EMOJI` | `:fireworks::sparkles::boom::sparkles::fireworks:` | Milestone burst: 1-23 `:shortcodes:`, up to 200 characters. Custom (animated) emoji work |
+| `SPARKLE_SUGGEST_TO` | (off) | User ID that receives `.suggest` ideas. Empty = `.suggest` off |
+
+Invalid values never crash the bot: the feature turns off (or falls back to its default) and a `[config]` warning is logged at startup.
 
 Commands (`.sparkle`, `.sparkles`) are always `.sparkle` and `.sparkles` regardless of currency name.
 
@@ -203,6 +215,8 @@ Sparklebot only listens in channels it's been invited to:
 ```
 /invite @Sparklebot
 ```
+
+**Welcome channel:** invite the bot there too, and pick a channel every member is in (such as #general). A mention only notifies people who are members of that channel. The explosion renders large only for viewers whose Slack emoji setting allows jumbo emoji.
 
 ## Deployment
 
@@ -303,16 +317,18 @@ sparklebot/
       safe.ts             -- SafeText branded type
       rate-limit.ts       -- Sliding-window rate limiter
       resolver.ts         -- Slack user/channel resolution
+      welcome.ts          -- team_join welcome (sparkle, public post, DM tour)
     commands/
       sparkle.ts          -- .sparkle command with party mode
       sparkles.ts         -- .sparkles leaderboard handler
       help.ts             -- .help command
+      suggest.ts          -- .suggest owner DM
     personalities/
       playful.json        -- Default personality (80 messages)
       professional.json
       sarcastic.json
       pirate.json
-  tests/                  -- Vitest test files (166 tests)
+  tests/                  -- Vitest test files (202 tests)
   helm/sparklebot/        -- Helm chart
   Dockerfile              -- Multi-stage Node 24 alpine build
 ```
