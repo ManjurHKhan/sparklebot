@@ -72,7 +72,10 @@ export function createDispatcher(deps: DispatcherDeps) {
   return async function dispatch({ message }: { message: IncomingMessage }): Promise<void> {
     // 1. Eligibility: a plain channel message with a user and text. App attribution alone
     // doesn't disqualify it: an agent posting on a person's behalf carries the person's user
-    // ID. Who actually sent it is settled by resolving that user at the giver gate.
+    // ID. Who actually sent it is settled by resolving that user at the giver gate. `user` is
+    // the token owner: chat.postMessage has no parameter that sets it (chat:write.customize only
+    // changes the display name and icon), so an app carries a human's ID only with that human's
+    // own token, i.e. the person authorized the agent.
     if (!message?.text || !message.user || message.subtype) {
       if (process.env.DEBUG_DISPATCHER) log('DISPATCH: Returning early, message:', { text: message?.text, user: message?.user, subtype: message?.subtype, bot_id: message?.bot_id });
       return;
