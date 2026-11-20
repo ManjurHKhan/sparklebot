@@ -6,7 +6,19 @@ describe('SlackResolver.resolveUser', () => {
   it('resolves a live human with isBot=false', async () => {
     const { client } = makeFakeSlack({ users: [{ id: 'U0FAKE0001', name: 'alice' }] });
     const r = new SlackResolver(client as never);
-    expect(await r.resolveUser('U0FAKE0001')).toEqual({ id: 'U0FAKE0001', name: 'alice', isBot: false });
+    expect(await r.resolveUser('U0FAKE0001')).toEqual({ id: 'U0FAKE0001', name: 'alice', isBot: false, isGuest: false });
+  });
+
+  it('flags multi-channel and single-channel guests as isGuest', async () => {
+    const { client } = makeFakeSlack({
+      users: [
+        { id: 'U0FAKEGST1', is_restricted: true },
+        { id: 'U0FAKEGST2', is_ultra_restricted: true },
+      ],
+    });
+    const r = new SlackResolver(client as never);
+    expect((await r.resolveUser('U0FAKEGST1'))?.isGuest).toBe(true);
+    expect((await r.resolveUser('U0FAKEGST2'))?.isGuest).toBe(true);
   });
 
   it('returns null for deleted users', async () => {

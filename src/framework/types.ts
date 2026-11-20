@@ -12,6 +12,8 @@ export interface User {
   name: string;
   /** true for is_bot OR is_app_user. In ctx.mentions only our own bot ever has this true. */
   isBot: boolean;
+  /** Multi- or single-channel guest. Optional so test literals compile; the resolver always sets it. */
+  isGuest?: boolean;
 }
 
 /** Read-only Slack resolution surface. No posting methods, by construction. */

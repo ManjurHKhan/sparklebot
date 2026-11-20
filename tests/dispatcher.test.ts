@@ -75,7 +75,7 @@ describe('dispatcher routing', () => {
     const h = harness();
     await h.msg('.sparkle <@U0FAKE0002> great work');
     expect(h.runs).toHaveLength(1);
-    expect(h.runs[0]!.mentions).toEqual([{ id: 'U0FAKE0002', name: 'bob', isBot: false }]);
+    expect(h.runs[0]!.mentions).toEqual([{ id: 'U0FAKE0002', name: 'bob', isBot: false, isGuest: false }]);
     expect(h.runs[0]!.args).toBe('great work');
     expect(h.runs[0]!.giver.id).toBe(GIVER.id);
   });

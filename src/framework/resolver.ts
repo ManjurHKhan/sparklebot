@@ -78,6 +78,7 @@ export class SlackResolver implements ResolverApi {
       id: u.id,
       name: u.profile?.display_name || u.profile?.real_name || u.real_name || u.name || u.id,
       isBot: u.is_bot === true || u.is_app_user === true,
+      isGuest: u.is_restricted === true || u.is_ultra_restricted === true,
     };
     this.userCache.set(id, user);
     return user;
