@@ -5,17 +5,15 @@ import { escapeText, isSafe, trusted, type SafeText } from './framework/safe.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-interface Personality {
-  encouragement: string[];
-  selfSparkleShame: string[];
-  botSparkleQuips: string[];
-  firstSparkleCelebration: string[];
-  partyAnnouncements: string[];
-  welcomePublic: string[];
-  welcomeDM: string[];
-  firstGiveBonus: string[];
-  agentNudge: string[];
-}
+export const MESSAGE_KEYS = [
+  'encouragement', 'selfSparkleShame', 'botSparkleQuips', 'firstSparkleCelebration', 'partyAnnouncements',
+  'welcomePublic', 'welcomeDM', 'firstGiveBonus', 'agentNudge',
+] as const;
+export type MessageKey = (typeof MESSAGE_KEYS)[number];
+/** Operator-supplied replacement lists (SPARKLE_MESSAGES). Untrusted: sanitised before use. */
+export type MessageOverrides = Partial<Record<MessageKey, string[]>>;
+
+type Personality = Record<MessageKey, string[]>;
 
 function loadPersonality(name: string): Personality {
   const filePath = join(__dirname, 'personalities', `${name}.json`);
