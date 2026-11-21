@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { createMessages } from '../src/messages.js';
+import { createMessages, MESSAGE_KEYS, type MessageKey } from '../src/messages.js';
 import { readFileSync } from 'node:fs';
 import { fmt, isSafe, userMention } from '../src/framework/safe.js';
 
@@ -97,5 +97,45 @@ describe('welcome and first-give lines', () => {
   it('welcomePublic keeps a SafeText mention intact', () => {
     const out = m.welcomePublic({ mention: userMention('U0FAKE0010'), currency: 'sparkle' });
     expect(out.text).toContain('<@U0FAKE0010>');
+  });
+});
+
+describe('message overrides', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('an override replaces only its list', () => {
+    const m = createMessages('playful', { agentNudge: ['nudge {user}'] });
+    expect(m.agentNudge({ user: 'bob' }).text).toBe('nudge bob');
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const vars: Record<string, string | number> = { giver: 'a', user: 'b', currency: 's', count: 1 };
+    const playful = JSON.parse(readFileSync('src/personalities/playful.json', 'utf-8')) as Record<string, string[]>;
+    const first = playful.encouragement![0]!.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k]));
+    expect(m.encouragement(vars).text).toBe(first);
+  });
+
+  it('overrides apply over the playful fallback', () => {
+    expect(createMessages('nonexistent', { agentNudge: ['x {user}'] }).agentNudge({ user: 'b' }).text).toBe('x b');
+  });
+
+  it('a multi-line override keeps its line break', () => {
+    const m = createMessages('playful', { partyAnnouncements: ['Party!\n> {recipients}'] });
+    expect(m.partyAnnouncement({ recipients: 'r' }).text).toBe('Party!\n> r');
+  });
+
+  // Vault is seeded with the built-in lines, so the override path must leave them as they are
+  // (emoji variation selectors, *bold*, > quotes).
+  it.each(['playful', 'professional', 'sarcastic', 'pirate'])('%s lines pass through the override path unchanged', (name) => {
+    const lists = JSON.parse(readFileSync(`src/personalities/${name}.json`, 'utf-8')) as Record<MessageKey, string[]>;
+    const m = createMessages('playful', lists);
+    const method = { botSparkleQuips: 'botSparkleQuip', partyAnnouncements: 'partyAnnouncement' } as Record<string, string>;
+    for (const key of MESSAGE_KEYS) {
+      lists[key].forEach((line, i) => {
+        vi.spyOn(Math, 'random').mockReturnValue((i + 0.5) / lists[key].length);
+        const out = (m as unknown as Record<string, (v: object) => { text: string }>)[method[key] ?? key]!({}).text;
+        expect(out, `${name}.${key}[${i}]`).toBe(line);
+      });
+    }
   });
 });

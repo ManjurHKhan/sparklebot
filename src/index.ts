@@ -33,6 +33,7 @@ if (!config.slackBotToken || !config.slackAppToken) {
 }
 
 for (const w of config.configWarnings) log(`[config] ${w}`);
+log(`[config] message overrides: ${Object.keys(config.messages).join(', ') || 'none'}`);
 
 const store = createSqliteStore(config.dbPath);
 
@@ -73,7 +74,7 @@ async function main(): Promise<void> {
   const resolver = new SlackResolver(app.client as never);
   const rateLimiter = new SlidingWindow(config.rateLimit.limit, config.rateLimit.windowMs);
   const commandLimiter = new SlidingWindow(config.commandLimit.limit, config.commandLimit.windowMs);
-  const messages = createMessages(config.personality);
+  const messages = createMessages(config.personality, config.messages);
   const megaBurst = emojiBurst(config.megaEmoji);
 
   const registry = new Registry();
