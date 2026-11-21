@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { escapeText, isSafe, trusted, type SafeText } from './framework/safe.js';
+import { escapeText, isSafe, neutralizeBroadcasts, trusted, type SafeText } from './framework/safe.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -61,10 +61,11 @@ export interface Messages {
 
 /**
  * Operator lines skip repo review. Every Slack ping or link is a <…> sequence, so escaping
- * & and < leaves them as plain text while *bold*, emoji and > quotes still render.
+ * & and < leaves them as plain text while *bold*, emoji and > quotes still render. Plain
+ * @here/@channel/@everyone are broken too, as in user text.
  */
 function cleanTemplate(line: string): string {
-  return line.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+  return neutralizeBroadcasts(line.replaceAll('&', '&amp;').replaceAll('<', '&lt;'));
 }
 
 export function createMessages(personalityName: string, overrides: MessageOverrides = {}): Messages {
