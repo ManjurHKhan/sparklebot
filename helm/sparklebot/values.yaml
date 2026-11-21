@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/manjurhkhan/sparklebot
-  tag: "1.2.0"
+  tag: "1.3.0"
   pullPolicy: IfNotPresent
 
 persistence:
@@ -38,6 +38,11 @@ sparkle:
   megaEmoji: ""
   # User ID that receives .suggest ideas by DM. "" = .suggest off.
   suggestTo: ""
+  # Replace random message lists without a release: list name -> lines (up to 50, <= 500 chars).
+  # Names: encouragement, selfSparkleShame, botSparkleQuips, firstSparkleCelebration,
+  # partyAnnouncements, welcomePublic, welcomeDM, firstGiveBonus, agentNudge. A set list replaces
+  # the personality's; Slack <…> markup in a line shows as text.
+  messages: {}
 
 podSecurityContext:
   runAsNonRoot: true

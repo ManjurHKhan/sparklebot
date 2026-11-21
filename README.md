@@ -197,6 +197,7 @@ Optional variables:
 | `SPARKLE_WELCOME_CHANNELS` | (none) | Channel tour for the welcome DM: JSON array of `{"id","about"}`, up to 15, `about` up to 120 characters |
 | `SPARKLE_MEGA_EMOJI` | `:fireworks::sparkles::boom::sparkles::fireworks:` | Milestone burst: 1-23 `:shortcodes:`, up to 200 characters. Custom (animated) emoji work |
 | `SPARKLE_SUGGEST_TO` | (off) | User ID that receives `.suggest` ideas. Empty = `.suggest` off |
+| `SPARKLE_MESSAGES` | (none) | Replace random message lists without a release: JSON object of list name to lines, e.g. `{"welcomePublic":["Welcome {mention}!"]}`. Lists: `encouragement`, `selfSparkleShame`, `botSparkleQuips`, `firstSparkleCelebration`, `partyAnnouncements`, `welcomePublic`, `welcomeDM`, `firstGiveBonus`, `agentNudge`. A set list replaces the personality's; up to 50 lines of up to 500 characters. Slack `<…>` markup in a line shows as text, so a line cannot ping or link. A bad list logs a warning and keeps the default |
 
 Invalid values never crash the bot: the feature turns off (or falls back to its default) and a `[config]` warning is logged at startup.
 
@@ -329,7 +330,7 @@ sparklebot/
       professional.json
       sarcastic.json
       pirate.json
-  tests/                  -- Vitest test files (242 tests)
+  tests/                  -- Vitest test files (260 tests)
   helm/sparklebot/        -- Helm chart
   Dockerfile              -- Multi-stage Node 24 alpine build
 ```
