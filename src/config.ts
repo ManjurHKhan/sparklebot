@@ -1,4 +1,5 @@
 import { CHANNEL_ID_RE, EMOJI_BURST_RE, USER_ID_RE, escapeText } from './framework/safe.js';
+import { MESSAGE_KEYS, type MessageKey, type MessageOverrides } from './messages.js';
 
 export interface WelcomeChannel {
   id: string;
@@ -10,6 +11,8 @@ const MAX_BURST_LEN = 200;
 const MAX_TOUR = 15;
 // Measured escaped: 15 rows of this plus the fixed lines stays under MAX_MESSAGE_LEN (3000).
 const MAX_ABOUT = 120;
+const MAX_LINES = 50;
+const MAX_LINE = 500;
 
 export interface Config {
   slackBotToken: string | undefined;
@@ -30,6 +33,7 @@ export interface Config {
   welcomeChannels: WelcomeChannel[];
   megaEmoji: string;
   suggestTo?: string;
+  messages: MessageOverrides;
   /** Problems found while parsing; logged at startup. A bad value disables its feature, never crashes. */
   configWarnings: string[];
 }
@@ -54,6 +58,36 @@ function parseTour(raw: string | undefined, warn: (m: string) => void): WelcomeC
   if (out.length > MAX_TOUR) {
     warn(`SPARKLE_WELCOME_CHANNELS has ${out.length} entries; only the first ${MAX_TOUR} are used`);
     return out.slice(0, MAX_TOUR);
+  }
+  return out;
+}
+
+function parseMessages(raw: string | undefined, warn: (m: string) => void): MessageOverrides {
+  if (!raw) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = undefined;
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    warn('SPARKLE_MESSAGES must be a JSON object of list name to lines; using the default messages');
+    return {};
+  }
+  const out: MessageOverrides = {};
+  for (const [key, lines] of Object.entries(parsed)) {
+    if (!(MESSAGE_KEYS as readonly string[]).includes(key)) {
+      warn(`SPARKLE_MESSAGES has unknown list ${key}; ignored`);
+      continue;
+    }
+    const ok = Array.isArray(lines) && lines.length > 0
+      && lines.every((l) => typeof l === 'string' && l.trim() !== '' && l.length <= MAX_LINE);
+    if (!ok) {
+      warn(`SPARKLE_MESSAGES ${key} must be a non-empty list of non-blank lines up to ${MAX_LINE} characters; using the default`);
+      continue;
+    }
+    if (lines.length > MAX_LINES) warn(`SPARKLE_MESSAGES ${key} has ${lines.length} lines; only the first ${MAX_LINES} are used`);
+    out[key as MessageKey] = (lines as string[]).slice(0, MAX_LINES);
   }
   return out;
 }
@@ -108,6 +142,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     welcomeChannels: parseTour(env.SPARKLE_WELCOME_CHANNELS, warn),
     megaEmoji,
     suggestTo: id('SPARKLE_SUGGEST_TO', USER_ID_RE),
+    messages: parseMessages(env.SPARKLE_MESSAGES, warn),
     configWarnings,
   };
 }

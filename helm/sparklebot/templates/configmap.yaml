@@ -17,3 +17,4 @@ data:
   SPARKLE_WELCOME_CHANNELS: {{ .Values.sparkle.welcomeChannels | toJson | quote }}
   SPARKLE_MEGA_EMOJI: {{ .Values.sparkle.megaEmoji | quote }}
   SPARKLE_SUGGEST_TO: {{ .Values.sparkle.suggestTo | quote }}
+  SPARKLE_MESSAGES: {{ .Values.sparkle.messages | toJson | quote }}

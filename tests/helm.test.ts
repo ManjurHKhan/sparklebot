@@ -76,4 +76,10 @@ describe.skipIf(!helmAvailable())('helm chart single-writer guarantees', () => {
     expect(out).toContain('SPARKLE_SUGGEST_TO: ""');
     expect(out).toContain('SPARKLE_MEGA_EMOJI: ""');
   });
+
+  it('renders SPARKLE_MESSAGES as JSON, {} by default', () => {
+    const out = render(['--set-json', 'sparkle.messages={"agentNudge":["hi {user}"]}']);
+    expect(out).toContain('SPARKLE_MESSAGES: "{\\"agentNudge\\":[\\"hi {user}\\"]}"');
+    expect(render()).toContain('SPARKLE_MESSAGES: "{}"');
+  });
 });

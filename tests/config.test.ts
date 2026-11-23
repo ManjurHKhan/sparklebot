@@ -114,3 +114,51 @@ describe('loadConfig: welcome, tour, mega emoji, suggest', () => {
     expect(c.configWarnings.join('\n')).toContain('15');
   });
 });
+
+describe('loadConfig: SPARKLE_MESSAGES', () => {
+  const env = (m: unknown) => ({ SPARKLE_MESSAGES: typeof m === 'string' ? m : JSON.stringify(m) });
+
+  it('unset, empty or {} gives no overrides and no warnings', () => {
+    for (const c of [loadConfig({}), loadConfig(env('')), loadConfig(env({}))]) {
+      expect(c.messages).toEqual({});
+      expect(c.configWarnings).toEqual([]);
+    }
+  });
+
+  it('reads valid lists', () => {
+    const m = { welcomePublic: ['Hi {mention}'], agentNudge: ['a', 'b'] };
+    expect(loadConfig(env(m)).messages).toEqual(m);
+  });
+
+  it.each(['nope', '[]', 'null', '"x"'])('invalid JSON or a non-object (%s) warns once and ignores all', (raw) => {
+    const c = loadConfig(env(raw));
+    expect(c.messages).toEqual({});
+    expect(c.configWarnings).toHaveLength(1);
+    expect(c.configWarnings[0]).toMatch(/SPARKLE_MESSAGES/);
+  });
+
+  it('unknown key warns, valid keys kept', () => {
+    const c = loadConfig(env({ welcomepublic: ['x'], agentNudge: ['a'] }));
+    expect(c.messages).toEqual({ agentNudge: ['a'] });
+    expect(c.configWarnings).toHaveLength(1);
+    expect(c.configWarnings[0]).toMatch(/welcomepublic/);
+  });
+
+  it('a bad list falls back for that list only', () => {
+    const c = loadConfig(env({
+      agentNudge: [], welcomeDM: 'x', firstGiveBonus: ['ok', '  '], encouragement: ['x'.repeat(501)], welcomePublic: ['ok'],
+    }));
+    expect(c.messages).toEqual({ welcomePublic: ['ok'] });
+    expect(c.configWarnings).toHaveLength(4);
+    for (const k of ['agentNudge', 'welcomeDM', 'firstGiveBonus', 'encouragement']) {
+      expect(c.configWarnings.some((w) => w.includes(k)), k).toBe(true);
+    }
+  });
+
+  it('keeps the first 50 lines and warns', () => {
+    const lines = Array.from({ length: 51 }, (_, i) => `line ${i}`);
+    const c = loadConfig(env({ agentNudge: lines }));
+    expect(c.messages.agentNudge).toEqual(lines.slice(0, 50));
+    expect(c.configWarnings).toHaveLength(1);
+  });
+});

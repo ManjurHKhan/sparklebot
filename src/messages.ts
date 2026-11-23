@@ -1,21 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { escapeText, isSafe, trusted, type SafeText } from './framework/safe.js';
+import { escapeText, isSafe, neutralizeBroadcasts, trusted, type SafeText } from './framework/safe.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-interface Personality {
-  encouragement: string[];
-  selfSparkleShame: string[];
-  botSparkleQuips: string[];
-  firstSparkleCelebration: string[];
-  partyAnnouncements: string[];
-  welcomePublic: string[];
-  welcomeDM: string[];
-  firstGiveBonus: string[];
-  agentNudge: string[];
-}
+export const MESSAGE_KEYS = [
+  'encouragement', 'selfSparkleShame', 'botSparkleQuips', 'firstSparkleCelebration', 'partyAnnouncements',
+  'welcomePublic', 'welcomeDM', 'firstGiveBonus', 'agentNudge',
+] as const;
+export type MessageKey = (typeof MESSAGE_KEYS)[number];
+/** Operator-supplied replacement lists (SPARKLE_MESSAGES). Untrusted: sanitised before use. */
+export type MessageOverrides = Partial<Record<MessageKey, string[]>>;
+
+type Personality = Record<MessageKey, string[]>;
 
 function loadPersonality(name: string): Personality {
   const filePath = join(__dirname, 'personalities', `${name}.json`);
@@ -35,7 +33,7 @@ export type MessageVars = Record<string, SafeText | string | number>;
 
 /**
  * Substitute {vars} into a trusted template. Raw strings are escaped; SafeText passes through.
- * Safe by composition: template is repo-authored JSON (trusted by definition), and every var is
+ * Safe by composition: template is repo-authored JSON or a cleanTemplate'd override, and every var is
  * escaped here or already SafeText — so the trusted() contract holds for the composed result.
  */
 function substitute(template: string, vars: MessageVars): SafeText {
@@ -61,8 +59,18 @@ export interface Messages {
   agentNudge(vars: MessageVars): SafeText;
 }
 
-export function createMessages(personalityName: string): Messages {
-  const p = loadPersonality(personalityName);
+/**
+ * Operator lines skip repo review. Every Slack ping or link is a <…> sequence, so escaping
+ * & and < leaves them as plain text while *bold*, emoji and > quotes still render. Plain
+ * @here/@channel/@everyone are broken too, as in user text.
+ */
+function cleanTemplate(line: string): string {
+  return neutralizeBroadcasts(line.replaceAll('&', '&amp;').replaceAll('<', '&lt;'));
+}
+
+export function createMessages(personalityName: string, overrides: MessageOverrides = {}): Messages {
+  const cleaned = Object.fromEntries(Object.entries(overrides).map(([k, lines]) => [k, lines.map(cleanTemplate)]));
+  const p: Personality = { ...loadPersonality(personalityName), ...cleaned };
   return {
     encouragement: (v) => substitute(pickRandom(p.encouragement), v),
     selfSparkleShame: (v) => substitute(pickRandom(p.selfSparkleShame), v),

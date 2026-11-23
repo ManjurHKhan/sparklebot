@@ -22,9 +22,13 @@ function escapeSlackControls(s: string): string {
   return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+/** Break plain @here/@channel/@everyone so no Slack parsing mode can turn them into a broadcast. */
+export function neutralizeBroadcasts(s: string): string {
+  return s.replace(/@(?=here\b|channel\b|everyone\b)/gi, `@${ZWSP}`);
+}
+
 function escapeNonLinkText(s: string): string {
-  return escapeSlackControls(s)
-    .replace(/@(?=here\b|channel\b|everyone\b)/gi, `@${ZWSP}`)
+  return neutralizeBroadcasts(escapeSlackControls(s))
     .replaceAll('`', '')
     .replace(/([*_~])/g, `$1${ZWSP}`);
 }
